@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @keyframes sc-fadein { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:translateY(0) } }
+    body { margin:0 }
+    textarea { outline:none !important; resize:none }
+    ::-webkit-scrollbar { width:5px }
+    ::-webkit-scrollbar-track { background:transparent }
+    ::-webkit-scrollbar-thumb { background:#d8d8d0; border-radius:4px }
+  </style>
+</helmet>
+
+<div style="display:flex; height:100vh; width:100%; background:#f1f2ed; color:#18180e; font-family:'Geist',-apple-system,BlinkMacSystemFont,sans-serif; overflow:hidden">
+
+  <!-- ── SIDEBAR ── -->
+  <aside style="width:220px; min-width:220px; background:#fdfdf9; border-right:1px solid #d8d8d0; display:flex; flex-direction:column; height:100vh; flex-shrink:0; overflow:hidden">
+
+    <!-- Logo -->
+    <div style="padding:18px 16px 16px; border-bottom:1px solid #d8d8d0">
+      <div style="display:flex; align-items:center; gap:9px">
+        <div style="width:30px; height:30px; border-radius:8px; background:#c4f030; display:flex; align-items:center; justify-content:center; flex-shrink:0">
+          <span style="font-size:11px; font-weight:700; color:#1e3400; letter-spacing:-0.5px">SC</span>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:600; color:#18180e; letter-spacing:-0.3px">Social Copilot</div>
+          <div style="font-size:10px; color:#b5b5a4; margin-top:1px">IRC USA</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav style="flex:1; padding:8px; display:flex; flex-direction:column; gap:2px; overflow:hidden">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="3">
+        <div onClick="{{ item.onClick }}" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; cursor:pointer; background:{{ item.navBg }}" style-hover="background:rgba(0,0,0,0.04)">
+          <div style="width:2px; height:14px; border-radius:2px; background:{{ item.indicatorBg }}; flex-shrink:0"></div>
+          <span style="font-size:13px; color:{{ item.navColor }}; letter-spacing:-0.1px; font-weight:{{ item.navFw }}">{{ item.label }}</span>
+        </div>
+      </sc-for>
+
+      <div style="height:1px; background:#e8e8e1; margin:8px 0 6px"></div>
+
+      <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; cursor:pointer" style-hover="background:rgba(0,0,0,0.03)">
+        <div style="width:2px; height:14px; flex-shrink:0"></div>
+        <span style="font-size:13px; color:#c4c4b8; letter-spacing:-0.1px">Calendar</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; cursor:pointer" style-hover="background:rgba(0,0,0,0.03)">
+        <div style="width:2px; height:14px; flex-shrink:0"></div>
+        <span style="font-size:13px; color:#c4c4b8; letter-spacing:-0.1px">Analytics</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; cursor:pointer" style-hover="background:rgba(0,0,0,0.03)">
+        <div style="width:2px; height:14px; flex-shrink:0"></div>
+        <span style="font-size:13px; color:#c4c4b8; letter-spacing:-0.1px">Settings</span>
+      </div>
+    </nav>
+
+    <!-- User -->
+    <div style="padding:14px 16px; border-top:1px solid #e8e8e1; flex-shrink:0">
+      <div style="display:flex; align-items:center; gap:9px">
+        <div style="width:28px; height:28px; border-radius:50%; background:rgba(180,235,0,0.2); border:1px solid rgba(140,200,0,0.3); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; color:#3a5e00; flex-shrink:0">A</div>
+        <div style="min-width:0; flex:1">
+          <div style="font-size:12px; font-weight:500; color:#2c2c1c">Admin</div>
+          <div style="font-size:10px; color:#b5b5a4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fc9d98919592bc958e9f898f9dd29f94898e9f94">[email&#160;protected]</a></div>
+        </div>
+        <div style="font-size:16px; color:#c4c4b8; cursor:pointer; flex-shrink:0" style-hover="color:#8a8a78">⋯</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <div style="flex:1; position:relative; overflow:hidden; min-width:0">
+
+    <!-- Top bar -->
+    <div style="position:absolute; top:0; left:0; right:0; height:52px; border-bottom:1px solid #d8d8d0; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:#fdfdf9; z-index:10">
+      <div style="display:flex; align-items:center; gap:12px">
+        <span style="font-size:15px; font-weight:600; letter-spacing:-0.3px; color:#18180e">{{ screenTitle }}</span>
+        <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ false }}">
+          <span style="font-size:11px; color:#b5b5a4; background:#f1f2ed; border:1px solid #e8e8e1; padding:2px 8px; border-radius:4px">Jun 11, 2026</span>
+        </sc-if>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px">
+        <div style="width:30px; height:30px; border-radius:7px; background:#f1f2ed; border:1px solid #e8e8e1; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; color:#8a8a78" style-hover="border-color:#d0d0c8">🔔</div>
+        <button onClick="{{ openComposer }}" style="background:#c4f030; color:#1e3400; border:none; padding:7px 16px; border-radius:7px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; letter-spacing:-0.1px; display:flex; align-items:center; gap:6px" style-hover="background:#b8e020">
+          <span style="font-size:14px; line-height:1; font-weight:400">+</span> New Post
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ DASHBOARD ══ -->
+    <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+      <div data-screen-label="Dashboard" style="position:absolute; top:52px; left:0; right:0; bottom:0; overflow-y:auto; padding:24px; animation:sc-fadein 0.18s ease">
+
+        <!-- Stats -->
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+            <div style="background:#ffffff; border:1px solid #d4d4cc; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.06); padding:18px 18px 16px" style-hover="background:#fafaf6">
+              <div style="font-size:10px; color:#9a9a88; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px; font-weight:500">{{ s.label }}</div>
+              <div style="font-size:28px; font-weight:700; letter-spacing:-1.2px; color:#18180e; margin-bottom:5px; line-height:1">{{ s.value }}</div>
+              <div style="font-size:11px; color:#9a9a88; line-height:1.4">{{ s.delta }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- Two-column lower -->
+        <div style="display:grid; grid-template-columns:1fr 300px; gap:12px">
+
+          <!-- Recent posts -->
+          <div style="background:#ffffff; border:1px solid #d4d4cc; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.06); overflow:hidden">
+            <div style="padding:13px 18px; border-bottom:1px solid #d8d8d0; display:flex; align-items:center; justify-content:space-between">
+              <span style="font-size:13px; font-weight:600; color:#2c2c1c">Recent Posts</span>
+              <span style="font-size:11px; color:#9a9a88; cursor:pointer" style-hover="color:#6b6b5c">View all →</span>
+            </div>
+            <sc-for list="{{ recentPosts }}" as="post" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; padding:13px 18px; border-bottom:1px solid rgba(232,232,225,0.8); gap:12px" style-hover="background:rgba(0,0,0,0.018)">
+                <div style="width:6px; height:6px; border-radius:50%; background:{{ post.dot }}; flex-shrink:0"></div>
+                <div style="flex:1; min-width:0">
+                  <div style="font-size:13px; color:#2c2c1c; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:-0.1px">{{ post.title }}</div>
+                  <div style="font-size:11px; color:#9a9a88; margin-top:2px">{{ post.ch }} channels · {{ post.date }}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; flex-shrink:0">
+                  <span style="font-size:10px; font-weight:500; padding:3px 9px; border-radius:5px; background:{{ post.pill }}; color:{{ post.pillText }}; letter-spacing:0.1px">{{ post.status }}</span>
+                  <span style="font-size:12px; color:#9a9a88; min-width:36px; text-align:right; font-variant-numeric:tabular-nums">{{ post.reach }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <!-- Right panel -->
+          <div style="display:flex; flex-direction:column; gap:12px">
+            <div style="background:#ffffff; border:1px solid #d4d4cc; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.06); padding:16px">
+              <div style="font-size:12px; font-weight:600; color:#2c2c1c; margin-bottom:12px">Channels</div>
+              <div style="display:flex; flex-direction:column; gap:9px">
+                <div style="display:flex; align-items:center; justify-content:space-between">
+                  <div style="display:flex; align-items:center; gap:8px">
+                    <div style="width:20px; height:20px; border-radius:5px; background:#229ed9; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff">TG</div>
+                    <span style="font-size:12px; color:#6b6b5c">Telegram</span>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:4px">
+                    <div style="width:5px; height:5px; border-radius:50%; background:#22c55e"></div>
+                    <span style="font-size:11px; color:#9a9a88">4 active</span>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between">
+                  <div style="display:flex; align-items:center; gap:8px">
+                    <div style="width:20px; height:20px; border-radius:5px; background:linear-gradient(135deg,#f09433,#dc2743,#bc1888); display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff">IG</div>
+                    <span style="font-size:12px; color:#6b6b5c">Instagram</span>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:4px">
+                    <div style="width:5px; height:5px; border-radius:50%; background:#f59e0b"></div>
+                    <span style="font-size:11px; color:#9a9a88">3/4 active</span>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between">
+                  <div style="display:flex; align-items:center; gap:8px">
+                    <div style="width:20px; height:20px; border-radius:5px; background:#e8e8e1; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#8a8a78">W</div>
+                    <span style="font-size:12px; color:#6b6b5c">Web</span>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:4px">
+                    <div style="width:5px; height:5px; border-radius:50%; background:#22c55e"></div>
+                    <span style="font-size:11px; color:#9a9a88">2 active</span>
+                  </div>
+                </div>
+              </div>
+              <div style="height:1px; background:#e8e8e1; margin:14px 0 12px"></div>
+              <button onClick="{{ openComposer }}" style="width:100%; background:transparent; border:1px solid rgba(130,185,0,0.35); color:#3a5e00; padding:8px; border-radius:7px; font-size:12px; font-weight:500; cursor:pointer; font-family:inherit" style-hover="background:rgba(175,230,0,0.08)">Quick Compose →</button>
+            </div>
+
+            <div style="background:#ffffff; border:1px solid #d4d4cc; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.06); padding:16px">
+              <div style="font-size:12px; font-weight:600; color:#2c2c1c; margin-bottom:10px">Upcoming</div>
+              <div style="display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; gap:10px; align-items:flex-start">
+                  <div style="width:30px; height:30px; border-radius:6px; background:#f1f2ed; border:1px solid #e8e8e1; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0">
+                    <span style="font-size:8px; color:#9a9a88; line-height:1; text-transform:uppercase">Jun</span>
+                    <span style="font-size:13px; font-weight:700; color:#18180e; line-height:1.3">12</span>
+                  </div>
+                  <div>
+                    <div style="font-size:12px; color:#2c2c1c">Youth Night — Save the Date</div>
+                    <div style="font-size:10px; color:#9a9a88; margin-top:2px">6 channels · 10:00 AM</div>
+                  </div>
+                </div>
+                <div style="display:flex; gap:10px; align-items:flex-start">
+                  <div style="width:30px; height:30px; border-radius:6px; background:#f1f2ed; border:1px solid #e8e8e1; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0">
+                    <span style="font-size:8px; color:#9a9a88; line-height:1; text-transform:uppercase">Jun</span>
+                    <span style="font-size:13px; font-weight:700; color:#18180e; line-height:1.3">15</span>
+                  </div>
+                  <div>
+                    <div style="font-size:12px; color:#2c2c1c">Sunday Service Reminder</div>
+                    <div style="font-size:10px; color:#9a9a88; margin-top:2px">8 channels · 9:00 AM</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ══ COMPOSER ══ -->
+    <sc-if value="{{ isComposer }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Composer" style="position:absolute; top:52px; left:0; right:0; bottom:0; display:flex; overflow:hidden; animation:sc-fadein 0.18s ease">
+
+        <!-- Editor -->
+        <div style="flex:1; padding:24px; overflow-y:auto; border-right:1px solid #d8d8d0; display:flex; flex-direction:column; gap:16px; min-width:0">
+
+          <div>
+            <div style="font-size:10px; color:#9a9a88; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:8px; font-weight:500">Content</div>
+            <div style="background:#ffffff; border:1px solid #d4d4cc; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.06); overflow:hidden">
+              <textarea
+                value="{{ composerText }}"
+                onChange="{{ setComposerText }}"
+                placeholder="Write your post content here…"
+                style="display:block; width:100%; min-height:180px; background:transparent; border:none; padding:16px; font-size:14px; color:#18180e; font-family:'Geist',-apple-system,sans-serif; line-height:1.7; letter-spacing:-0.1px; box-sizing:border-box"
+              ></textarea>
+              <div style="padding:10px 14px; border-top:1px solid #e8e8e1; display:flex; align-items:center; justify-content:space-between">
+                <div style="display:flex; gap:6px">
+                  <button style="background:transparent; border:1px solid #d8d8d0; color:#8a8a78; padding:5px 10px; border-radius:5px; font-size:11px; cursor:pointer; font-family:inherit" style-hover="border-color:#b8b8b0; color:#6b6b5c">📎 Media</button>
+                  <button style="background:transparent; border:1px solid #d8d8d0; color:#8a8a78; padding:5px 10px; border-radius:5px; font-size:11px; cursor:pointer; font-family:inherit" style-hover="border-color:#b8b8b0; color:#6b6b5c">🔗 Link</button>
+                  <button style="background:transparent; border:1px solid #d8d8d0; color:#8a8a78; padding:5px 10px; border-radius:5px; font-size:11px; cursor:pointer; font-family:inherit" style-hover="border-color:#b8b8b0; color:#6b6b5c">✨ AI</button>
+                </div>
+                <span style="font-size:11px; color:#c4c4b8; font-variant-numeric:tabular-nums">{{ charCount }} / 4096</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic templates banner -->
+          <div style="background:rgba(175,230,0,0.08); border:1px solid rgba(130,185,0,0.22); border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start">
+            <span style="font-size:13px; flex-shrink:0; margin-top:1px; color:#3a5e00">✦</span>
+            <div>
+              <div style="font-size:12px; color:#3a5e00; font-weight:600; margin-bottom:2px">Dynamic templates active</div>
+              <div style="font-size:11px; color:#8a8a78; line-height:1.5">Content will be automatically adapted per platform — Telegram (4096 chars), Instagram (2200 chars + caption), web (full article).</div>
+            </div>
+          </div>
+
+          <!-- Schedule -->
+          <div>
+            <div style="font-size:10px; color:#9a9a88; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:8px; font-weight:500">Schedule</div>
+            <div style="background:#ffffff; border:1px solid #d4d4cc; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.06); padding:14px 16px; display:flex; gap:10px">
+              <div style="flex:1; background:#f1f2ed; border:1px solid #e0e0d8; border-radius:7px; padding:9px 12px; font-size:12px; color:#8a8a78; cursor:pointer" style-hover="border-color:#c8c8c0">📅 Jun 15, 2026</div>
+              <div style="flex:1; background:#f1f2ed; border:1px solid #e0e0d8; border-radius:7px; padding:9px 12px; font-size:12px; color:#8a8a78; cursor:pointer" style-hover="border-color:#c8c8c0">🕙 10:00 AM</div>
+              <div style="background:rgba(175,230,0,0.12); border:1px solid rgba(130,185,0,0.28); border-radius:7px; padding:9px 14px; font-size:12px; color:#3a5e00; cursor:pointer; font-weight:600; white-space:nowrap" style-hover="background:rgba(175,230,0,0.2)">Send now</div>
+            </div>
+          </div>
+
+          <button style="background:#c4f030; color:#1e3400; border:none; padding:13px 20px; border-radius:9px; font-size:13px; font-weight:700; cursor:pointer; width:100%; font-family:inherit; letter-spacing:-0.2px" style-hover="background:#b8e020">Dispatch to {{ selectedCount }} channels →</button>
+
+        </div>
+
+        <!-- Channel selector -->
+        <div style="width:290px; flex-shrink:0; padding:20px; overflow-y:auto; background:#f7f8f3">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px">
+            <div style="font-size:10px; color:#9a9a88; text-transform:uppercase; letter-spacing:0.6px; font-weight:500">Dispatch to</div>
+            <div style="font-size:10px; color:#3a5e00; font-weight:600; cursor:pointer">{{ selectedCount }} selected</div>
+          </div>
+
+          <div style="font-size:10px; color:#c4c4b8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; font-weight:500; display:flex; align-items:center; gap:6px">
+            <div style="width:14px; height:14px; border-radius:3px; background:#229ed9; display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:700; color:#fff">TG</div>
+            Telegram
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:14px">
+            <sc-for list="{{ tgChannels }}" as="ch" hint-placeholder-count="4">
+              <div onClick="{{ ch.toggle }}" style="display:flex; align-items:center; gap:9px; padding:9px 11px; background:{{ ch.cardBg }}; border:{{ ch.cardBorder }}; border-radius:7px; cursor:pointer" style-hover="background:rgba(170,225,0,0.09)">
+                <div style="width:15px; height:15px; border-radius:4px; background:{{ ch.checkBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0">
+                  <span style="font-size:9px; color:{{ ch.checkColor }}; font-weight:700; line-height:1">✓</span>
+                </div>
+                <div style="flex:1; min-width:0">
+                  <div style="font-size:12px; font-weight:500; color:#2c2c1c">{{ ch.name }}</div>
+                  <div style="font-size:10px; color:#9a9a88">{{ ch.handle }}</div>
+                </div>
+                <span style="font-size:10px; color:#c4c4b8">{{ ch.subs }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="font-size:10px; color:#c4c4b8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; font-weight:500; display:flex; align-items:center; gap:6px">
+            <div style="width:14px; height:14px; border-radius:3px; background:linear-gradient(135deg,#f09433,#dc2743,#bc1888); display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:700; color:#fff">IG</div>
+            Instagram
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:14px">
+            <sc-for list="{{ igChannels }}" as="ch" hint-placeholder-count="4">
+              <div onClick="{{ ch.toggle }}" style="display:flex; align-items:center; gap:9px; padding:9px 11px; background:{{ ch.cardBg }}; border:{{ ch.cardBorder }}; border-radius:7px; cursor:pointer" style-hover="background:rgba(170,225,0,0.09)">
+                <div style="width:15px; height:15px; border-radius:4px; background:{{ ch.checkBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0">
+                  <span style="font-size:9px; color:{{ ch.checkColor }}; font-weight:700; line-height:1">✓</span>
+                </div>
+                <div style="flex:1; min-width:0">
+                  <div style="font-size:12px; font-weight:500; color:#2c2c1c">{{ ch.name }}</div>
+                  <div style="font-size:10px; color:#9a9a88">{{ ch.handle }}</div>
+                </div>
+                <span style="font-size:10px; color:#c4c4b8">{{ ch.subs }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="font-size:10px; color:#c4c4b8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; font-weight:500; display:flex; align-items:center; gap:6px">
+            <div style="width:14px; height:14px; border-radius:3px; background:#e8e8e1; display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:700; color:#8a8a78">W</div>
+            Web
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px">
+            <sc-for list="{{ webChannels }}" as="ch" hint-placeholder-count="2">
+              <div onClick="{{ ch.toggle }}" style="display:flex; align-items:center; gap:9px; padding:9px 11px; background:{{ ch.cardBg }}; border:{{ ch.cardBorder }}; border-radius:7px; cursor:pointer" style-hover="background:rgba(170,225,0,0.09)">
+                <div style="width:15px; height:15px; border-radius:4px; background:{{ ch.checkBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0">
+                  <span style="font-size:9px; color:{{ ch.checkColor }}; font-weight:700; line-height:1">✓</span>
+                </div>
+                <div style="flex:1; min-width:0">
+                  <div style="font-size:12px; font-weight:500; color:#2c2c1c">{{ ch.name }}</div>
+                  <div style="font-size:10px; color:#9a9a88">{{ ch.handle }}</div>
+                </div>
+                <span style="font-size:10px; color:#c4c4b8; background:#ebebE4; padding:1px 6px; border-radius:3px">{{ ch.type }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+      </div>
+    </sc-if>
+
+    <!-- ══ CHANNELS ══ -->
+    <sc-if value="{{ isChannels }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Channels" style="position:absolute; top:52px; left:0; right:0; bottom:0; overflow-y:auto; padding:24px; animation:sc-fadein 0.18s ease; display:flex; flex-direction:column; gap:28px">
+
+        <!-- Telegram -->
+        <div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px">
+            <div style="display:flex; align-items:center; gap:8px">
+              <div style="width:22px; height:22px; border-radius:6px; background:#229ed9; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#fff">TG</div>
+              <span style="font-size:13px; font-weight:500; color:#6b6b5c">Telegram Channels</span>
+              <span style="font-size:10px; color:#b5b5a4; background:#ffffff; border:1px solid #e8e8e1; padding:2px 7px; border-radius:4px">4</span>
+            </div>
+            <button style="background:transparent; border:1px solid #d8d8d0; color:#8a8a78; padding:5px 12px; border-radius:6px; font-size:11px; cursor:pointer; font-family:inherit" style-hover="border-color:#c0c0b8">+ Add channel</button>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px">
+            <sc-for list="{{ telegramChannels }}" as="ch" hint-placeholder-count="4">
+              <div style="background:#ffffff; border:1px solid #d4d4cc; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.06); padding:16px" style-hover="background:#fafaf6">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px">
+                  <div style="width:38px; height:38px; border-radius:9px; background:#229ed9; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff">TG</div>
+                  <div style="display:flex; align-items:center; gap:4px; padding:3px 8px; background:rgba(34,197,94,0.1); border-radius:5px">
+                    <div style="width:5px; height:5px; border-radius:50%; background:#22c55e"></div>
+                    <span style="font-size:9px; color:#16a34a; font-weight:600">Live</span>
+                  </div>
+                </div>
+                <div style="font-size:13px; font-weight:600; color:#2c2c1c; margin-bottom:2px; letter-spacing:-0.2px">{{ ch.name }}</div>
+                <div style="font-size:11px; color:#9a9a88; margin-bottom:14px">{{ ch.handle }}</div>
+                <div style="display:flex; align-items:baseline; gap:4px">
+                  <span style="font-size:20px; font-weight:700; letter-spacing:-0.8px; color:#18180e">{{ ch.subs }}</span>
+                  <span style="font-size:10px; color:#9a9a88">subscribers</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Instagram -->
+        <div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px">
+            <div style="display:flex; align-items:center; gap:8px">
+              <div style="width:22px; height:22px; border-radius:6px; background:linear-gradient(135deg,#f09433,#dc2743,#bc1888); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#fff">IG</div>
+              <span style="font-size:13px; font-weight:500; color:#6b6b5c">Instagram Accounts</span>
+              <span style="font-size:10px; color:#b5b5a4; background:#ffffff; border:1px solid #e8e8e1; padding:2px 7px; border-radius:4px">4</span>
+            </div>
+            <button style="background:transparent; border:1px solid #d8d8d0; color:#8a8a78; padding:5px 12px; border-radius:6px; font-size:11px; cursor:pointer; font-family:inherit" style-hover="border-color:#c0c0b8">+ Add account</button>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px">
+            <sc-for list="{{ instagramChannels }}" as="ch" hint-placeholder-count="4">
+              <div style="background:#ffffff; border:1px solid #d4d4cc; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.06); padding:16px" style-hover="background:#fafaf6">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px">
+                  <div style="width:38px; height:38px; border-radius:9px; background:linear-gradient(135deg,#f09433,#dc2743,#bc1888); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff">IG</div>
+                  <div style="display:flex; align-items:center; gap:4px; padding:3px 8px; background:{{ ch.statusDotBg }}; border-radius:5px">
+                    <div style="width:5px; height:5px; border-radius:50%; background:{{ ch.statusDot }}"></div>
+                    <span style="font-size:9px; color:{{ ch.statusDot }}; font-weight:600">{{ ch.statusLabel }}</span>
+                  </div>
+                </div>
+                <div style="font-size:13px; font-weight:600; color:#2c2c1c; margin-bottom:2px; letter-spacing:-0.2px">{{ ch.name }}</div>
+                <div style="font-size:11px; color:#9a9a88; margin-bottom:14px">{{ ch.handle }}</div>
+                <div style="display:flex; align-items:baseline; gap:4px">
+                  <span style="font-size:20px; font-weight:700; letter-spacing:-0.8px; color:#18180e">{{ ch.subs }}</span>
+                  <span style="font-size:10px; color:#9a9a88">followers</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Web Properties -->
+        <div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px">
+            <div style="display:flex; align-items:center; gap:8px">
+              <div style="width:22px; height:22px; border-radius:6px; background:#e8e8e1; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#8a8a78">W</div>
+              <span style="font-size:13px; font-weight:500; color:#6b6b5c">Web Properties</span>
+              <span style="font-size:10px; color:#b5b5a4; background:#ffffff; border:1px solid #e8e8e1; padding:2px 7px; border-radius:4px">2</span>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px">
+            <sc-for list="{{ webProps }}" as="prop" hint-placeholder-count="2">
+              <div style="background:#ffffff; border:1px solid #d4d4cc; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.06); padding:16px" style-hover="background:#fafaf6">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px">
+                  <div style="width:38px; height:38px; border-radius:9px; background:{{ prop.iconBg }}; border:1px solid #e8e8e1; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:#fff">{{ prop.icon }}</div>
+                  <div style="display:flex; align-items:center; gap:4px; padding:3px 8px; background:rgba(34,197,94,0.1); border-radius:5px">
+                    <div style="width:5px; height:5px; border-radius:50%; background:#22c55e"></div>
+                    <span style="font-size:9px; color:#16a34a; font-weight:600">Live</span>
+                  </div>
+                </div>
+                <div style="font-size:13px; font-weight:600; color:#2c2c1c; margin-bottom:2px; letter-spacing:-0.2px">{{ prop.name }}</div>
+                <div style="font-size:11px; color:#9a9a88; margin-bottom:14px">{{ prop.url }}</div>
+                <span style="font-size:10px; color:#6b6b5c; background:#f1f2ed; padding:3px 9px; border-radius:5px; border:1px solid #e0e0d8; font-weight:500">{{ prop.type }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    screen: 'dashboard',
+    composerText: '',
+    selectedChannels: ['tg1', 'tg2', 'ig1', 'ig2', 'ig4', 'web1', 'web2'],
+  };
+
+  renderVals() {
+    const { screen, composerText, selectedChannels } = this.state;
+    const isSel = id => selectedChannels.includes(id);
+
+    const allChannels = [
+      { id: 'tg1', g: 'tg', name: 'IRC Main', handle: '@irc_main', subs: '1.2k' },
+      { id: 'tg2', g: 'tg', name: 'IRC Youth', handle: '@irc_youth', subs: '847' },
+      { id: 'tg3', g: 'tg', name: 'IRC Worship', handle: '@irc_worship', subs: '623' },
+      { id: 'tg4', g: 'tg', name: 'IRC Prayer', handle: '@irc_prayer', subs: '412' },
+      { id: 'ig1', g: 'ig', name: 'IRC USA', handle: '@ircusa.church', subs: '3.4k', status: 'ok' },
+      { id: 'ig2', g: 'ig', name: 'IRC Youth', handle: '@ircyouth', subs: '1.8k', status: 'ok' },
+      { id: 'ig3', g: 'ig', name: 'IRC Worship', handle: '@ircworship', subs: '956', status: 'error' },
+      { id: 'ig4', g: 'ig', name: 'IRC Events', handle: '@ircevents', subs: '741', status: 'ok' },
+      { id: 'web1', g: 'web', name: 'IRC Website', handle: 'ircusa.church', subs: '', type: 'Framer' },
+      { id: 'web2', g: 'web', name: 'IRC Portal', handle: 'portal.ircusa.church', subs: '', type: 'Softr' },
+    ];
+
+    const channelItem = (ch) => {
+      const sel = isSel(ch.id);
+      return {
+        ...ch,
+        cardBg: sel ? 'rgba(170,225,0,0.1)' : '#ffffff',
+        cardBorder: sel ? '1px solid rgba(130,185,0,0.3)' : '1px solid #e8e8e1',
+        checkBg: sel ? '#8dc400' : '#d8d8d0',
+        checkColor: sel ? '#fff' : 'transparent',
+        toggle: () => {
+          const next = isSel(ch.id)
+            ? selectedChannels.filter(c => c !== ch.id)
+            : [...selectedChannels, ch.id];
+          this.setState({ selectedChannels: next });
+        },
+      };
+    };
+
+    const nav = [
+      { id: 'dashboard', label: 'Overview' },
+      { id: 'composer', label: 'Composer' },
+      { id: 'channels', label: 'Channels' },
+    ].map(n => {
+      const active = screen === n.id;
+      return {
+        ...n,
+        onClick: () => this.setState({ screen: n.id }),
+        navBg: active ? 'rgba(180,235,0,0.1)' : 'transparent',
+        navColor: active ? '#3a5e00' : '#8a8a78',
+        navFw: active ? 500 : 400,
+        indicatorBg: active ? '#8dc400' : 'transparent',
+      };
+    });
+
+    const stats = [
+      { label: 'Active Channels', value: '10', delta: '4 Telegram · 4 Instagram · 2 Web' },
+      { label: 'Posts Sent', value: '47', delta: 'Last 30 days' },
+      { label: 'Scheduled', value: '6', delta: 'Next 7 days' },
+      { label: 'Total Reach', value: '12.4k', delta: '↑ 18% vs last month' },
+    ];
+
+    const recentPosts = [
+      { id:1, title:'Sunday Service Announcement', ch:8, status:'Sent', date:'Jun 10', reach:'2.4k', dot:'#22c55e', pill:'rgba(34,197,94,0.12)', pillText:'#16a34a' },
+      { id:2, title:'Youth Night — Save the Date', ch:6, status:'Scheduled', date:'Jun 12', reach:'—', dot:'#f59e0b', pill:'rgba(245,158,11,0.12)', pillText:'#d97706' },
+      { id:3, title:'Prayer Meeting Reminder', ch:4, status:'Sent', date:'Jun 9', reach:'1.1k', dot:'#22c55e', pill:'rgba(34,197,94,0.12)', pillText:'#16a34a' },
+      { id:4, title:'Community Outreach Photos', ch:8, status:'Sent', date:'Jun 8', reach:'3.2k', dot:'#22c55e', pill:'rgba(34,197,94,0.12)', pillText:'#16a34a' },
+      { id:5, title:'New Location Announcement', ch:3, status:'Draft', date:'Jun 7', reach:'—', dot:'#c8c8c0', pill:'rgba(0,0,0,0.06)', pillText:'#8a8a78' },
+    ];
+
+    const tgChannels = allChannels.filter(c => c.g === 'tg').map(channelItem);
+    const igChannels = allChannels.filter(c => c.g === 'ig').map(channelItem);
+    const webChannels = allChannels.filter(c => c.g === 'web').map(channelItem);
+
+    const telegramChannels = allChannels.filter(c => c.g === 'tg');
+    const instagramChannels = allChannels.filter(c => c.g === 'ig').map(c => ({
+      ...c,
+      statusDot: c.status === 'error' ? '#ef4444' : '#22c55e',
+      statusDotBg: c.status === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)',
+      statusLabel: c.status === 'error' ? 'Auth error' : 'Connected',
+    }));
+    const webProps = [
+      { id:'framer', name:'IRC Website', url:'ircusa.church', type:'Framer', iconBg:'#1a1a14', icon:'F' },
+      { id:'softr', name:'IRC Portal', url:'portal.ircusa.church', type:'Softr', iconBg:'#4f46e5', icon:'S' },
+    ];
+
+    const titles = { dashboard:'Overview', composer:'New Post', channels:'Channels & Accounts' };
+
+    return {
+      isDashboard: screen === 'dashboard',
+      isComposer: screen === 'composer',
+      isChannels: screen === 'channels',
+      screenTitle: titles[screen] || '',
+      nav,
+      stats,
+      recentPosts,
+      tgChannels,
+      igChannels,
+      webChannels,
+      telegramChannels,
+      instagramChannels,
+      webProps,
+      composerText,
+      charCount: composerText.length,
+      selectedCount: selectedChannels.length,
+      setComposerText: (e) => this.setState({ composerText: e.target.value }),
+      openComposer: () => this.setState({ screen: 'composer' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+ALTER TABLE "posts" DROP COLUMN "source_image_url";
