@@ -51,14 +51,14 @@ export default async function MockConsentPage({ searchParams }: PageProps) {
             <div className="flex items-start gap-2.5">
               <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
               <div className="text-xs">
-                <p className="font-semibold text-slate-200">instagram_basic</p>
+                <p className="font-semibold text-slate-200">instagram_business_basic</p>
                 <p className="text-slate-400 mt-0.5">Read basic profile info (username, account type) and media metadata.</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5 pt-2.5 border-t border-slate-800/60">
               <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
               <div className="text-xs">
-                <p className="font-semibold text-slate-200">instagram_content_publish</p>
+                <p className="font-semibold text-slate-200">instagram_business_content_publish</p>
                 <p className="text-slate-400 mt-0.5">Publish photos, videos, and carousel posts to your Instagram Business account.</p>
               </div>
             </div>

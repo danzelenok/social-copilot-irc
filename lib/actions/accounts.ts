@@ -264,7 +264,7 @@ export async function getInstagramAuthUrl(branchId: string) {
   // Real Meta OAuth Consent Screen URL
   const authorizeUrl = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(
     redirectUri
-  )}&scope=instagram_basic,instagram_content_publish&response_type=code&state=${state}`
+  )}&scope=instagram_business_basic,instagram_business_content_publish&response_type=code&state=${state}`
 
   return { success: true, url: authorizeUrl }
 }
