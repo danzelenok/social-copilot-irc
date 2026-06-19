@@ -136,44 +136,6 @@ export function AccountCard({
                 ))}
             </div>
           </div>
-
-          {account.platform_type === "instagram" && account.credentials.expiresAt && (() => {
-            const expiryDate = new Date(account.credentials.expiresAt)
-            const isExpired = expiryDate < new Date()
-            const diffTime = expiryDate.getTime() - Date.now()
-            const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
-
-            return (
-              <div className="pt-2.5 border-t border-border/40">
-                <span className="text-xs text-muted-foreground/80 block mb-1">Token Validity</span>
-                <div className="flex items-center justify-between bg-muted/30 dark:bg-muted/10 px-2 py-1.5 rounded border border-border/30 text-xs">
-                  <span className="text-muted-foreground font-medium">Expires:</span>
-                  <div className="flex items-center gap-1.5 font-semibold">
-                    <span className="text-foreground">
-                      {expiryDate.toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </span>
-                    {isExpired ? (
-                      <span className="text-destructive text-[10px] bg-destructive/10 px-1.5 py-0.5 rounded border border-destructive/20 font-bold uppercase tracking-wider animate-pulse">
-                        Expired
-                      </span>
-                    ) : (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold uppercase tracking-wider ${
-                        diffDays < 7
-                          ? "text-amber-500 bg-amber-500/10 border-amber-500/20"
-                          : "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
-                      }`}>
-                        {diffDays} days left
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
         </div>
       </CardContent>
 
