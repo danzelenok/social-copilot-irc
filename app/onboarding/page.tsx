@@ -1,13 +1,11 @@
 "use client"
 
 import React, { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
 import { useOrganizationList } from "@clerk/nextjs"
 import { createOrganizationAction } from "@/lib/actions/organizations"
 import { Building2, Sparkles, ArrowRight, Loader2 } from "lucide-react"
 
 export default function OnboardingPage() {
-  const router = useRouter()
   const { setActive } = useOrganizationList()
   const [name, setName] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +26,9 @@ export default function OnboardingPage() {
         if (setActive) {
           await setActive({ organization: res.clerkOrgId })
         }
-        router.push("/dashboard")
+        // Hard navigation so the middleware sees the refreshed session cookie
+        // (a client-side router.push can race the Clerk session token update).
+        window.location.href = "/dashboard"
       } else {
         setError(res?.error || "Failed to create organization.")
       }
