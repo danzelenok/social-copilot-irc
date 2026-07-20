@@ -50,7 +50,7 @@ export default function OnboardingPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <label htmlFor="orgName" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Название вашей организации
+                Organization name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
@@ -87,7 +87,7 @@ export default function OnboardingPage() {
                 </>
               ) : (
                 <>
-                  <span>Создать организацию</span>
+                  <span>Create</span>
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}

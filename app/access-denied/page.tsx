@@ -18,7 +18,7 @@ export default function AccessDeniedPage() {
             Доступ ограничен
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            У вас нет доступа к этому рабочему пространству. Обратитесь к администратору.
+            You don't have access to this workspace. Please contact your administrator.
           </p>
         </div>
 
