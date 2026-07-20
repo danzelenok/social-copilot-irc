@@ -1,10 +1,14 @@
 "use client"
 
 import React, { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { useOrganizationList } from "@clerk/nextjs"
 import { createOrganizationAction } from "@/lib/actions/organizations"
 import { Building2, Sparkles, ArrowRight, Loader2 } from "lucide-react"
 
 export default function OnboardingPage() {
+  const router = useRouter()
+  const { setActive } = useOrganizationList()
   const [name, setName] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -20,8 +24,13 @@ export default function OnboardingPage() {
 
     startTransition(async () => {
       const res = await createOrganizationAction(name)
-      if (res && !res.success) {
-        setError(res.error || "Failed to create organization.")
+      if (res && res.success && res.clerkOrgId) {
+        if (setActive) {
+          await setActive({ organization: res.clerkOrgId })
+        }
+        router.push("/dashboard")
+      } else {
+        setError(res?.error || "Failed to create organization.")
       }
     })
   }

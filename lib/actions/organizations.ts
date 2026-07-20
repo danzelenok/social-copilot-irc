@@ -5,7 +5,6 @@ import { db } from "@/lib/db"
 import { organizations, branches } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import { DEFAULT_ORG_ID } from "@/lib/constants/organizations"
 
 export async function createOrganizationAction(name: string) {
@@ -50,6 +49,8 @@ export async function createOrganizationAction(name: string) {
     }
 
     revalidatePath("/", "layout")
+
+    return { success: true, clerkOrgId: clerkOrg.id }
   } catch (error) {
     console.error("Failed to create organization:", error)
     return {
@@ -57,6 +58,4 @@ export async function createOrganizationAction(name: string) {
       error: error instanceof Error ? error.message : "Failed to create organization.",
     }
   }
-
-  redirect("/dashboard")
 }
