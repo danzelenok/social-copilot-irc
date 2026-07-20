@@ -14,14 +14,14 @@ export default function OnboardingPage() {
     setError(null)
 
     if (!name.trim()) {
-      setError("Пожалуйста, введите название организации.")
+      setError("Please enter an organization name.")
       return
     }
 
     startTransition(async () => {
       const res = await createOrganizationAction(name)
       if (res && !res.success) {
-        setError(res.error || "Не удалось создать организацию.")
+        setError(res.error || "Failed to create organization.")
       }
     })
   }
@@ -38,10 +38,10 @@ export default function OnboardingPage() {
             SC
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Создание организации
+            Create organization
           </h1>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-            Добро пожаловать в Social Copilot! Укажите название вашей организации для начала работы.
+            Welcome to Social Copilot! Enter your organization name to get started.
           </p>
         </div>
 
@@ -62,7 +62,7 @@ export default function OnboardingPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Например, Моя Компания"
+                  placeholder="e.g. My Company"
                   disabled={isPending}
                   className="w-full rounded-xl border border-input bg-background/50 pl-10 pr-4 py-2.5 text-sm font-medium text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50"
                 />
@@ -83,7 +83,7 @@ export default function OnboardingPage() {
               {isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Создаем рабочее пространство...
+                  Creating workspace...
                 </>
               ) : (
                 <>
@@ -96,7 +96,7 @@ export default function OnboardingPage() {
 
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/80 pt-2 border-t border-border/50">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span>Вы автоматически станете администратором</span>
+            <span>You will automatically become an administrator</span>
           </div>
         </div>
       </div>

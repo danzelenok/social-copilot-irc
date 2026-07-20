@@ -15,7 +15,7 @@ export default function AccessDeniedPage() {
 
         <div className="space-y-2">
           <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-            Доступ ограничен
+            Access restricted
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             You don't have access to this workspace. Please contact your administrator.
@@ -26,7 +26,7 @@ export default function AccessDeniedPage() {
           <SignOutButton>
             <button className="inline-flex items-center gap-2 rounded-xl border border-input bg-background/80 px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-accent hover:text-accent-foreground transition-all cursor-pointer">
               <LogOut className="h-3.5 w-3.5" />
-              <span>Выйти из аккаунта</span>
+              <span>Sign out</span>
             </button>
           </SignOutButton>
         </div>

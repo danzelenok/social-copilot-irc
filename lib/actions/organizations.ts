@@ -6,8 +6,7 @@ import { organizations, branches } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-
-export const DEFAULT_ORG_ID = "00000000-0000-0000-0000-000000000000" as const
+import { DEFAULT_ORG_ID } from "@/lib/constants/organizations"
 
 export async function createOrganizationAction(name: string) {
   const { userId } = await auth()
