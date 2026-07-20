@@ -34,7 +34,7 @@ export default function BranchSelector({ branches }: BranchSelectorProps) {
     <div className="flex items-center gap-2">
       <Building2 className="h-4.5 w-4.5 text-muted-foreground/80 shrink-0" />
       <Select value={currentValue} onValueChange={handleValueChange}>
-        <SelectTrigger className="w-[180px] bg-background/50 backdrop-blur-xs hover:bg-accent/40 cursor-pointer shadow-xs border-border hover:border-border/80 transition-all text-xs sm:text-sm font-medium">
+        <SelectTrigger className="w-[180px] bg-background/50 backdrop-blur-xs hover:bg-transparent hover:border-accent cursor-pointer shadow-xs border-border transition-all text-xs sm:text-sm font-medium">
           <SelectValue placeholder="Select Branch" />
         </SelectTrigger>
         <SelectContent className="min-w-[180px]">

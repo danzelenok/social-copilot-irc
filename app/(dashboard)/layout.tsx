@@ -6,13 +6,20 @@ import Sidebar from "@/components/shared/Sidebar"
 import BranchSelector from "@/components/branch/BranchSelector"
 import ClientUserButton from "@/components/shared/ClientUserButton"
 
+import { getCurrentOrganization } from "@/lib/auth/org"
+import { eq } from "drizzle-orm"
+
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // Fetch branch options from the database ordered by name
-  const branchList = await db.select().from(branches).orderBy(branches.name)
+  const org = await getCurrentOrganization()
+
+  // Fetch branch options for the active organization from the database ordered by name
+  const branchList = org
+    ? await db.select().from(branches).where(eq(branches.organization_id, org.id)).orderBy(branches.name)
+    : []
 
   return (
     <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center bg-background text-muted-foreground text-sm">Loading workspace...</div>}>

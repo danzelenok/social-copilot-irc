@@ -1,14 +1,17 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { branches, accounts } from "@/lib/db/schema"
-import { and, desc, eq } from "drizzle-orm"
+import { branches, accounts, branchAddresses } from "@/lib/db/schema"
+import { and, desc, eq, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { decryptAndGetHandle } from "@/lib/utils/accounts"
+import { getCurrentOrganization, requireCurrentOrganization } from "@/lib/auth/org"
 
 export interface BranchWithAccounts {
   id: string
+  organization_id: string
   name: string
+  timezone: string | null
   created_at: Date
   accountCount: number
   platforms: ("telegram" | "instagram" | "framer" | "subsplash")[]
@@ -20,15 +23,44 @@ export interface BranchWithAccounts {
     created_at: Date
     handle?: string
   }[]
+  addresses?: {
+    id: string
+    branch_id: string
+    label: string
+    address_text: string
+    is_default: boolean
+    created_at: Date
+  }[]
 }
 
 /**
- * Returns all branches ordered by created_at desc, enriched with active account counts and platforms.
+ * Returns all branches ordered by created_at desc for the current organization,
+ * enriched with active account counts, platforms, and saved addresses.
  */
 export async function getBranches(): Promise<BranchWithAccounts[]> {
   try {
-    const branchList = await db.select().from(branches).orderBy(desc(branches.created_at))
-    const accountList = await db.select().from(accounts)
+    const org = await getCurrentOrganization()
+    if (!org) return []
+
+    const branchList = await db
+      .select()
+      .from(branches)
+      .where(eq(branches.organization_id, org.id))
+      .orderBy(desc(branches.created_at))
+
+    const branchIds = branchList.map((b) => b.id)
+    if (branchIds.length === 0) return []
+
+    const accountList = await db
+      .select()
+      .from(accounts)
+      .where(inArray(accounts.branch_id, branchIds))
+
+    const addressList = await db
+      .select()
+      .from(branchAddresses)
+      .where(inArray(branchAddresses.branch_id, branchIds))
+      .orderBy(desc(branchAddresses.is_default), desc(branchAddresses.created_at))
 
     return branchList.map((branch) => {
       const branchAccounts = accountList.filter((acc) => acc.branch_id === branch.id)
@@ -38,7 +70,9 @@ export async function getBranches(): Promise<BranchWithAccounts[]> {
 
       return {
         id: branch.id,
+        organization_id: branch.organization_id,
         name: branch.name,
+        timezone: branch.timezone,
         created_at: branch.created_at,
         accountCount: branchAccounts.length,
         platforms: platforms as ("telegram" | "instagram" | "framer" | "subsplash")[],
@@ -50,6 +84,16 @@ export async function getBranches(): Promise<BranchWithAccounts[]> {
           created_at: acc.created_at,
           handle: decryptAndGetHandle(acc.platform_type, acc.credentials_json),
         })),
+        addresses: addressList
+          .filter((addr) => addr.branch_id === branch.id)
+          .map((addr) => ({
+            id: addr.id,
+            branch_id: addr.branch_id,
+            label: addr.label,
+            address_text: addr.address_text,
+            is_default: addr.is_default,
+            created_at: addr.created_at,
+          })),
       }
     })
   } catch (error) {
@@ -59,7 +103,7 @@ export async function getBranches(): Promise<BranchWithAccounts[]> {
 }
 
 /**
- * Inserts a new branch, and revalidates paths.
+ * Inserts a new branch scoped to current organization, and revalidates paths.
  */
 export async function createBranch(data: { name: string }) {
   if (!data.name || data.name.trim() === "") {
@@ -70,9 +114,12 @@ export async function createBranch(data: { name: string }) {
   }
 
   try {
+    const org = await requireCurrentOrganization()
+
     const [newBranch] = await db
       .insert(branches)
       .values({
+        organization_id: org.id,
         name: data.name.trim(),
       })
       .returning()
@@ -83,12 +130,15 @@ export async function createBranch(data: { name: string }) {
     return { success: true, branch: newBranch }
   } catch (error) {
     console.error("Failed to create branch:", error)
-    return { success: false, error: "Failed to create branch. Please try again." }
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create branch.",
+    }
   }
 }
 
 /**
- * Updates a branch's name.
+ * Updates a branch's name scoped to current organization.
  */
 export async function updateBranch(id: string, data: { name: string }) {
   if (!id) {
@@ -102,16 +152,18 @@ export async function updateBranch(id: string, data: { name: string }) {
   }
 
   try {
+    const org = await requireCurrentOrganization()
+
     const [updatedBranch] = await db
       .update(branches)
       .set({
         name: data.name.trim(),
       })
-      .where(eq(branches.id, id))
+      .where(and(eq(branches.id, id), eq(branches.organization_id, org.id)))
       .returning()
 
     if (!updatedBranch) {
-      return { success: false, error: "Branch not found." }
+      return { success: false, error: "Branch not found or access denied." }
     }
 
     revalidatePath("/branches")
@@ -125,7 +177,41 @@ export async function updateBranch(id: string, data: { name: string }) {
 }
 
 /**
- * Deletes a branch. If the branch has active accounts, blocks deletion and returns an error payload.
+ * Updates a branch's timezone scoped to current organization.
+ */
+export async function updateBranchTimezone(id: string, timezone: string | null) {
+  if (!id) {
+    return { success: false, error: "Branch ID is required." }
+  }
+
+  try {
+    const org = await requireCurrentOrganization()
+
+    const [updatedBranch] = await db
+      .update(branches)
+      .set({
+        timezone,
+      })
+      .where(and(eq(branches.id, id), eq(branches.organization_id, org.id)))
+      .returning()
+
+    if (!updatedBranch) {
+      return { success: false, error: "Branch not found or access denied." }
+    }
+
+    revalidatePath("/branches")
+    revalidatePath(`/branches/${id}`)
+    revalidatePath("/", "layout")
+
+    return { success: true, branch: updatedBranch }
+  } catch (error) {
+    console.error("Failed to update branch timezone:", error)
+    return { success: false, error: "Failed to update branch timezone. Please try again." }
+  }
+}
+
+/**
+ * Deletes a branch scoped to current organization. If the branch has active accounts, blocks deletion.
  */
 export async function deleteBranch(id: string) {
   if (!id) {
@@ -133,6 +219,18 @@ export async function deleteBranch(id: string) {
   }
 
   try {
+    const org = await requireCurrentOrganization()
+
+    const [existing] = await db
+      .select()
+      .from(branches)
+      .where(and(eq(branches.id, id), eq(branches.organization_id, org.id)))
+      .limit(1)
+
+    if (!existing) {
+      return { success: false, error: "Branch not found or access denied." }
+    }
+
     // Check for active accounts connected to this branch
     const activeAccounts = await db
       .select()
@@ -150,8 +248,10 @@ export async function deleteBranch(id: string) {
       }
     }
 
-    // Delete branch (Drizzle CASCADE handles deleting any inactive accounts)
-    await db.delete(branches).where(eq(branches.id, id))
+    // Delete branch
+    await db
+      .delete(branches)
+      .where(and(eq(branches.id, id), eq(branches.organization_id, org.id)))
 
     revalidatePath("/branches")
     revalidatePath("/", "layout")

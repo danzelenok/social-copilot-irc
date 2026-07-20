@@ -3,23 +3,25 @@ import { Clock, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface StatusBadgeProps {
-  status: "pending" | "processing" | "published" | "failed"
+  status: "pending" | "processing" | "published" | "failed" | "scheduled" | "cancelled" | "draft" | "publishing"
   className?: string
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   switch (status) {
     case "pending":
+    case "draft":
       return (
         <Badge
           variant="outline"
           className={`bg-zinc-100/50 text-zinc-600 border-zinc-200 dark:bg-zinc-950/20 dark:text-zinc-400 dark:border-zinc-800 ${className}`}
         >
           <Clock className="h-3 w-3 mr-1 shrink-0" />
-          Pending
+          {status === "draft" ? "Draft" : "Pending"}
         </Badge>
       )
     case "processing":
+    case "publishing":
       return (
         <Badge
           variant="secondary"
@@ -46,6 +48,26 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
         >
           <AlertCircle className="h-3 w-3 mr-1 shrink-0" />
           Failed
+        </Badge>
+      )
+    case "scheduled":
+      return (
+        <Badge
+          variant="outline"
+          className={`bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30 ${className}`}
+        >
+          <Clock className="h-3 w-3 mr-1 shrink-0" />
+          Scheduled
+        </Badge>
+      )
+    case "cancelled":
+      return (
+        <Badge
+          variant="outline"
+          className={`bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-950/10 dark:text-zinc-500 dark:border-zinc-800 ${className}`}
+        >
+          <AlertCircle className="h-3 w-3 mr-1 shrink-0" />
+          Cancelled
         </Badge>
       )
     default:

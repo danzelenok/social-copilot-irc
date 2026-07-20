@@ -36,6 +36,27 @@
       "when": 1781821979460,
       "tag": "0004_magenta_bloodstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781889837050,
+      "tag": "0005_tranquil_garia",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781894893340,
+      "tag": "0006_dusty_harrier",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784580000000,
+      "tag": "0007_multi_tenancy",
+      "breakpoints": true
     }
   ]
 }

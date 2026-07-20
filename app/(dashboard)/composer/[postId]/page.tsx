@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm"
 import { getPostTargetsWithDetails } from "@/lib/actions/posts"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { AutoRefresh } from "@/components/shared/AutoRefresh"
+import { CancelTargetButton } from "@/components/composer/TargetActions"
 import {
   Card,
   CardContent,
@@ -31,7 +32,7 @@ import {
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { ArrowLeft, Calendar, FileText, Globe, Info } from "lucide-react"
+import { ArrowLeft, Calendar, FileText, Globe, Info, Clock, Edit2 } from "lucide-react"
 import { TelegramIcon, InstagramIcon } from "@/components/account/PlatformBadge"
 
 export const dynamic = "force-dynamic"
@@ -63,10 +64,6 @@ export default async function PostStatusPage({ params }: PageProps) {
     post.status === "publishing" ||
     targets.some((t) => t.status === "pending" || t.status === "processing")
 
-  const formattedEventDate = post.event_at
-    ? format(new Date(post.event_at), "EEE, MMM d, yyyy 'at' h:mm a")
-    : null
-
   return (
     <TooltipProvider>
       <div className="space-y-6 animate-in fade-in duration-300">
@@ -92,17 +89,31 @@ export default async function PostStatusPage({ params }: PageProps) {
                 <StatusBadge status={post.status as any} />
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                ID: {post.id} · Scheduled for {formattedEventDate}
+                ID: {post.id}
               </p>
             </div>
           </div>
 
-          <Link
-            href="/composer"
-            className={cn(buttonVariants({ size: "sm" }), "cursor-pointer")}
-          >
-            Create Another Post
-          </Link>
+          <div className="flex items-center gap-2">
+            {(post.status === "scheduled" || post.status === "draft") && (
+              <Link
+                href={`/composer/${post.id}/edit`}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "cursor-pointer font-semibold flex items-center gap-1.5"
+                )}
+              >
+                <Edit2 className="h-3.5 w-3.5" />
+                Edit Campaign
+              </Link>
+            )}
+            <Link
+              href="/composer"
+              className={cn(buttonVariants({ size: "sm" }), "cursor-pointer font-semibold")}
+            >
+              Create Another Post
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -131,18 +142,6 @@ export default async function PostStatusPage({ params }: PageProps) {
                     {post.body}
                   </p>
                 </div>
-
-                {formattedEventDate && (
-                  <div>
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                      Event Schedule
-                    </h4>
-                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-primary/5 border border-primary/10 text-xs text-primary font-medium w-fit">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>{formattedEventDate}</span>
-                    </div>
-                  </div>
-                )}
 
                 {post.media_url && (
                   <div>
@@ -187,14 +186,23 @@ export default async function PostStatusPage({ params }: PageProps) {
                         <TableHead className="pl-4">Branch</TableHead>
                         <TableHead>Platform</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                         <TableHead className="pr-4 text-right">Published At</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {targets.map((target) => (
                         <TableRow key={target.id} className="hover:bg-muted/10 border-b border-border/40 last:border-0">
-                          <TableCell className="font-semibold text-foreground pl-4 py-3.5">
-                            {target.branch.name}
+                          <TableCell className="pl-4 py-3.5">
+                            <div className="font-semibold text-foreground">
+                              {target.branch.name}
+                            </div>
+                            {target.event_at && target.branch.timezone && (
+                              <div className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 mt-0.5 select-none">
+                                <Clock className="h-3 w-3 shrink-0" />
+                                Scheduled: {format(new Date(target.event_at), "MMM d, yyyy 'at' h:mm a")} ({target.branch.timezone})
+                              </div>
+                            )}
                           </TableCell>
                           <TableCell className="py-3.5">
                             <div className="flex items-center gap-2">
@@ -229,6 +237,13 @@ export default async function PostStatusPage({ params }: PageProps) {
                                 </Tooltip>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell className="text-right py-3.5">
+                            {target.status === "scheduled" ? (
+                              <CancelTargetButton targetId={target.id} />
+                            ) : (
+                              <span className="text-xs text-muted-foreground select-none">—</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right text-xs text-muted-foreground pr-4 py-3.5">
                             {target.status === "published" && target.published_at

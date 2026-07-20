@@ -38,7 +38,7 @@ export async function publishInstagram(
       : assetUrl
 
     // Step 1: Create media container
-    // https://graph.facebook.com/v18.0/{userId}/media
+    // https://graph.instagram.com/v18.0/{userId}/media
     const containerParams: Record<string, string> = {
       caption,
       access_token: accessToken,
@@ -52,7 +52,7 @@ export async function publishInstagram(
       containerParams.image_url = resolvedAssetUrl
     }
 
-    const createRes = await fetch(`https://graph.facebook.com/v18.0/${userId}/media`, {
+    const createRes = await fetch(`https://graph.instagram.com/v18.0/${userId}/media`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -80,7 +80,7 @@ export async function publishInstagram(
       }
 
       const pollRes = await fetch(
-        `https://graph.facebook.com/v18.0/${containerId}?fields=status_code&access_token=${accessToken}`
+        `https://graph.instagram.com/v18.0/${containerId}?fields=status_code&access_token=${accessToken}`
       )
 
       if (!pollRes.ok) {
@@ -111,7 +111,7 @@ export async function publishInstagram(
 
     // Step 3: Publish container
     // POST /{userId}/media_publish
-    const publishRes = await fetch(`https://graph.facebook.com/v18.0/${userId}/media_publish`, {
+    const publishRes = await fetch(`https://graph.instagram.com/v18.0/${userId}/media_publish`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

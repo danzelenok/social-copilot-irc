@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, GitBranch, PenSquare, Settings, Zap } from "lucide-react"
+import { LayoutDashboard, GitBranch, PenSquare, Settings, Users } from "lucide-react"
 
 const sidebarLinks = [
   {
@@ -27,6 +27,11 @@ const sidebarLinks = [
     name: "Settings",
     href: "/settings",
     icon: Settings,
+  },
+  {
+    name: "Team",
+    href: "/settings/team",
+    icon: Users,
   },
 ]
 
@@ -81,11 +86,11 @@ export default function Sidebar() {
               key={link.href}
               href={link.href}
               className={cn(
-                "group flex items-center rounded-md py-2 px-2.5 text-[13px] transition-all duration-150 relative",
+                "group flex items-center rounded-md py-2 px-2.5 text-[13px] transition-all duration-150 relative border-[1.5px]",
                 collapsed ? "justify-center" : "gap-3.5",
                 isActive
-                  ? "bg-accent text-accent-foreground font-medium"
-                  : "text-muted-foreground/95 hover:bg-black/4 hover:text-foreground dark:hover:bg-white/4"
+                  ? "border-accent text-foreground font-medium bg-transparent"
+                  : "border-transparent text-muted-foreground/95 hover:bg-black/4 hover:text-foreground dark:hover:bg-white/4"
               )}
               title={collapsed ? link.name : undefined}
             >
@@ -103,7 +108,7 @@ export default function Sidebar() {
                 className={cn(
                   "h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-105",
                   isActive
-                    ? "text-accent-foreground"
+                    ? "text-accent"
                     : "text-muted-foreground/70 group-hover:text-foreground"
                 )}
               />

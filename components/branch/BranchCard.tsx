@@ -115,7 +115,7 @@ export default function BranchCard({
           <Button
             variant="outline"
             size="sm"
-            className="cursor-pointer text-xs font-semibold py-1 px-2.5 h-7.5 border-border hover:bg-accent/40 transition-colors gap-1 shadow-xs"
+            className="cursor-pointer text-xs font-semibold py-1 px-2.5 h-7.5 border-border hover:border-accent hover:text-foreground hover:bg-transparent bg-transparent transition-colors gap-1 shadow-xs"
           >
             Manage
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/card:translate-x-0.5" />

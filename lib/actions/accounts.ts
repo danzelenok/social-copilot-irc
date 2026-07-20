@@ -1,11 +1,13 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { accounts } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { accounts, branches } from "@/lib/db/schema"
+import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { encrypt, decrypt } from "@/lib/utils/encryption"
 import { signState } from "@/lib/utils/state"
+import { getCurrentOrganization, requireCurrentOrganization } from "@/lib/auth/org"
+import { getAccountHandle } from "@/lib/utils/accounts"
 
 export interface DecryptedAccount {
   id: string
@@ -17,8 +19,6 @@ export interface DecryptedAccount {
   handle: string
 }
 
-import { getAccountHandle } from "@/lib/utils/accounts"
-
 function maskCredential(value: string | undefined): string {
   if (!value) return ""
   if (value.length <= 6) return "••••••••"
@@ -26,10 +26,40 @@ function maskCredential(value: string | undefined): string {
 }
 
 /**
+ * Ensures a branch belongs to the current organization.
+ */
+async function verifyBranchBelongsToOrg(branchId: string) {
+  const org = await requireCurrentOrganization()
+  const [branch] = await db
+    .select({ id: branches.id })
+    .from(branches)
+    .where(and(eq(branches.id, branchId), eq(branches.organization_id, org.id)))
+    .limit(1)
+
+  if (!branch) {
+    throw new Error("Branch not found or access denied.")
+  }
+  return org
+}
+
+/**
  * Returns all accounts for a branch, with credentials decrypted and masked for client UI safety.
+ * Scoped to current organization.
  */
 export async function getAccountsByBranch(branchId: string): Promise<DecryptedAccount[]> {
   try {
+    const org = await getCurrentOrganization()
+    if (!org) return []
+
+    // Verify branch belongs to organization
+    const [branch] = await db
+      .select({ id: branches.id })
+      .from(branches)
+      .where(and(eq(branches.id, branchId), eq(branches.organization_id, org.id)))
+      .limit(1)
+
+    if (!branch) return []
+
     const rawAccounts = await db
       .select()
       .from(accounts)
@@ -67,6 +97,7 @@ export async function getAccountsByBranch(branchId: string): Promise<DecryptedAc
 
 /**
  * Inserts a new account, encrypting its credentials.
+ * Scoped to current organization.
  */
 export async function createAccount(data: {
   branchId: string
@@ -77,6 +108,12 @@ export async function createAccount(data: {
 
   if (!branchId) {
     return { success: false, error: "Branch ID is required." }
+  }
+
+  try {
+    await verifyBranchBelongsToOrg(branchId)
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Access denied." }
   }
 
   // Validate credentials based on platform
@@ -123,6 +160,7 @@ export async function createAccount(data: {
 
 /**
  * Partially updates an account, preserving existing credentials if submitted values are masked.
+ * Scoped to current organization.
  */
 export async function updateAccount(
   id: string,
@@ -136,13 +174,24 @@ export async function updateAccount(
   }
 
   try {
+    const org = await requireCurrentOrganization()
+
     const [existingAccount] = await db
-      .select()
+      .select({
+        id: accounts.id,
+        branch_id: accounts.branch_id,
+        platform_type: accounts.platform_type,
+        credentials_json: accounts.credentials_json,
+        is_active: accounts.is_active,
+        created_at: accounts.created_at,
+      })
       .from(accounts)
-      .where(eq(accounts.id, id))
+      .innerJoin(branches, eq(accounts.branch_id, branches.id))
+      .where(and(eq(accounts.id, id), eq(branches.organization_id, org.id)))
+      .limit(1)
 
     if (!existingAccount) {
-      return { success: false, error: "Account not found." }
+      return { success: false, error: "Account not found or access denied." }
     }
 
     const updateFields: Partial<typeof accounts.$inferInsert> = {}
@@ -164,13 +213,11 @@ export async function updateAccount(
       const mergedCreds = { ...existingCreds }
       for (const [key, val] of Object.entries(data.credentials)) {
         if (val && val.startsWith("••••••••")) {
-          // Keep existing value
           continue
         }
         mergedCreds[key] = val
       }
 
-      // Validate updated credentials
       if (existingAccount.platform_type === "telegram") {
         if (!mergedCreds.botToken || mergedCreds.botToken.trim() === "") {
           return { success: false, error: "Bot Token is required for Telegram." }
@@ -206,6 +253,7 @@ export async function updateAccount(
 
 /**
  * Hard deletes an account.
+ * Scoped to current organization.
  */
 export async function deleteAccount(id: string) {
   if (!id) {
@@ -213,13 +261,20 @@ export async function deleteAccount(id: string) {
   }
 
   try {
+    const org = await requireCurrentOrganization()
+
     const [existingAccount] = await db
-      .select()
+      .select({
+        id: accounts.id,
+        branch_id: accounts.branch_id,
+      })
       .from(accounts)
-      .where(eq(accounts.id, id))
+      .innerJoin(branches, eq(accounts.branch_id, branches.id))
+      .where(and(eq(accounts.id, id), eq(branches.organization_id, org.id)))
+      .limit(1)
 
     if (!existingAccount) {
-      return { success: false, error: "Account not found." }
+      return { success: false, error: "Account not found or access denied." }
     }
 
     await db.delete(accounts).where(eq(accounts.id, id))
@@ -237,12 +292,14 @@ export async function deleteAccount(id: string) {
 
 /**
  * Generates the Instagram authorize URL with a CSRF-signed state parameter.
- * Returns either the real Meta OAuth URL or a local simulated Sandbox Consent page URL.
+ * Scoped to current organization.
  */
 export async function getInstagramAuthUrl(branchId: string) {
   if (!branchId) {
     throw new Error("Branch ID is required to connect an Instagram account.")
   }
+
+  await verifyBranchBelongsToOrg(branchId)
 
   const appId = process.env.INSTAGRAM_APP_ID
   const redirectUri = process.env.INSTAGRAM_REDIRECT_URI
@@ -253,7 +310,6 @@ export async function getInstagramAuthUrl(branchId: string) {
 
   const state = signState(branchId)
 
-  // Use local mock consent screen if working with the simulation App ID
   if (appId === "mock_app_id") {
     const mockConsentUrl = `/api/auth/instagram/mock-consent?client_id=${appId}&redirect_uri=${encodeURIComponent(
       redirectUri
@@ -261,11 +317,9 @@ export async function getInstagramAuthUrl(branchId: string) {
     return { success: true, url: mockConsentUrl }
   }
 
-  // Real Meta OAuth Consent Screen URL
   const authorizeUrl = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(
     redirectUri
   )}&scope=instagram_business_basic,instagram_business_content_publish&response_type=code&state=${state}`
 
   return { success: true, url: authorizeUrl }
 }
-

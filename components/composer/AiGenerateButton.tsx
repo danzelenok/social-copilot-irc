@@ -42,11 +42,11 @@ export default function AiGenerateButton({
             variant="outline"
             size="sm"
             disabled={disabled}
-            className="h-7 px-2.5 text-xs font-semibold gap-1 text-violet-600 border-violet-200 bg-violet-50/50 hover:bg-violet-100 dark:text-violet-400 dark:border-violet-900/60 dark:bg-violet-950/20 dark:hover:bg-violet-900/30 shrink-0 cursor-pointer"
+            className="h-7 px-2.5 text-xs font-semibold gap-1 text-foreground border-[1.5px] border-ring bg-transparent hover:bg-ring/10 shrink-0 cursor-pointer"
           />
         }
       >
-        <Sparkles className="h-3.5 w-3.5 text-violet-500 dark:text-violet-400" />
+        <Sparkles className="h-3.5 w-3.5 text-ring" />
         <span>Generate with AI</span>
       </PopoverTrigger>
       <PopoverContent
@@ -56,7 +56,7 @@ export default function AiGenerateButton({
       >
         <div className="space-y-1">
           <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-violet-500 fill-violet-500/10" />
+            <Sparkles className="h-4 w-4 text-ring fill-ring/10" />
             <span>Generate with AI</span>
           </h4>
           <p className="text-xs text-muted-foreground">
@@ -86,7 +86,7 @@ export default function AiGenerateButton({
           type="button"
           onClick={handleGenerate}
           disabled={loading || !description.trim()}
-          className="w-full h-8.5 font-semibold text-xs text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 border-0 cursor-pointer disabled:opacity-50"
+          className="w-full h-8.5 font-semibold text-xs bg-foreground text-primary hover:bg-foreground/90 border-0 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 rounded-lg transition-all"
         >
           {loading ? (
             <>
