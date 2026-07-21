@@ -7,7 +7,8 @@ export function useAiGenerate() {
 
   const generate = async (
     description: string,
-    platform: "telegram" | "instagram" | "both"
+    platform: "telegram" | "instagram" | "both",
+    branchIds: string[] = []
   ): Promise<{ title: string; body: string } | null> => {
     setLoading(true)
     setError(null)
@@ -18,7 +19,7 @@ export function useAiGenerate() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ description, platform }),
+        body: JSON.stringify({ description, platform, branchIds }),
       })
 
       if (!response.ok) {

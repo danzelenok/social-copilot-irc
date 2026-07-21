@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, GitBranch, PenSquare, Settings, Users } from "lucide-react"
+import { LayoutDashboard, GitBranch, PenSquare, Calendar, Settings, Users, Sparkles } from "lucide-react"
 
 const sidebarLinks = [
   {
@@ -24,6 +24,11 @@ const sidebarLinks = [
     icon: PenSquare,
   },
   {
+    name: "Calendar",
+    href: "/calendar",
+    icon: Calendar,
+  },
+  {
     name: "Settings",
     href: "/settings",
     icon: Settings,
@@ -32,6 +37,11 @@ const sidebarLinks = [
     name: "Team",
     href: "/settings/team",
     icon: Users,
+  },
+  {
+    name: "AI Style",
+    href: "/settings/ai-style",
+    icon: Sparkles,
   },
 ]
 

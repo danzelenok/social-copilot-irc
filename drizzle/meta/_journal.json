@@ -71,6 +71,13 @@
       "when": 1784590390438,
       "tag": "0009_talented_puma",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784600000000,
+      "tag": "0010_ai_style_rag",
+      "breakpoints": true
     }
   ]
 }

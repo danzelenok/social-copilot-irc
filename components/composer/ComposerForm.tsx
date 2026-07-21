@@ -434,6 +434,7 @@ export default function ComposerForm({
                 }}
                 disabled={isFormDisabled}
                 platform={selectedPlatform}
+                branchIds={Object.keys(selectedTargets)}
               />
             </div>
             <Input

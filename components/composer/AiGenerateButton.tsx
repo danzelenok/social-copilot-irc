@@ -11,12 +11,14 @@ interface AiGenerateButtonProps {
   onGenerate: (title: string, body: string) => void
   disabled?: boolean
   platform: "telegram" | "instagram" | "both"
+  branchIds?: string[]
 }
 
 export default function AiGenerateButton({
   onGenerate,
   disabled = false,
   platform,
+  branchIds = [],
 }: AiGenerateButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [description, setDescription] = useState("")
@@ -25,7 +27,7 @@ export default function AiGenerateButton({
   const handleGenerate = async () => {
     if (!description.trim()) return
 
-    const result = await generate(description, platform)
+    const result = await generate(description, platform, branchIds)
     if (result) {
       onGenerate(result.title, result.body)
       setDescription("") // Clear description on success

@@ -4,11 +4,11 @@ import { db } from "@/lib/db"
 import { posts, postTargets, accounts, branches } from "@/lib/db/schema"
 import { inngest } from "@/lib/inngest/client"
 import { revalidatePath } from "next/cache"
-import { eq, and, inArray } from "drizzle-orm"
+import { eq, and, inArray, between, min, sql } from "drizzle-orm"
 import { decryptAndGetHandle } from "@/lib/utils/accounts"
 import { decrypt } from "@/lib/utils/encryption"
 import { Bot } from "grammy"
-import { format } from "date-fns"
+import { format, startOfMonth, endOfMonth } from "date-fns"
 import fs from "fs"
 import path from "path"
 import { imagekit } from "@/lib/imagekit"
@@ -1013,5 +1013,47 @@ export async function hideFromCalendar(postTargetId: string) {
       success: false,
       error: error instanceof Error ? error.message : "Failed to hide post target from calendar.",
     }
+  }
+}
+
+/**
+ * Retrieves all posts for the month with aggregated platform types.
+ * @param year full year (e.g. 2026)
+ * @param month 0-indexed month (0 = January, 11 = December)
+ */
+export async function getPostsForCalendar(year: number, month: number) {
+  try {
+    const org = await getCurrentOrganization()
+    if (!org) return []
+
+    const start = startOfMonth(new Date(year, month))
+    const end = endOfMonth(new Date(year, month))
+
+    const results = await db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        post_type: posts.post_type,
+        event_at: min(postTargets.event_at),
+        status: posts.status,
+        platforms: sql<string[]>`array_agg(DISTINCT ${accounts.platform_type})`,
+      })
+      .from(posts)
+      .innerJoin(postTargets, eq(postTargets.post_id, posts.id))
+      .innerJoin(accounts, eq(accounts.id, postTargets.account_id))
+      .innerJoin(branches, eq(branches.id, accounts.branch_id))
+      .where(
+        and(
+          eq(branches.organization_id, org.id),
+          between(postTargets.event_at, start, end),
+          eq(postTargets.hidden_from_calendar, false)
+        )
+      )
+      .groupBy(posts.id, posts.title, posts.post_type, posts.status)
+
+    return results
+  } catch (error) {
+    console.error("Failed to fetch calendar posts:", error)
+    return []
   }
 }

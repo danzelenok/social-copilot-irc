@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm"
 import { decrypt } from "@/lib/utils/encryption"
 import { publishTelegram } from "./publishTelegram"
 import { publishInstagram } from "./publishInstagram"
+import { generateEmbedding } from "@/lib/ai/embeddings"
 
 /**
  * Checks all targets for a post and updates the post status if all targets are completed.
@@ -32,6 +33,28 @@ export async function checkAndUpdatePostStatus(postId: string, step: any) {
         .update(posts)
         .set({ status: finalPostStatus })
         .where(eq(posts.id, postId))
+
+      if (finalPostStatus === "published") {
+        try {
+          const [currentPost] = await db
+            .select({ body: posts.body })
+            .from(posts)
+            .where(eq(posts.id, postId))
+            .limit(1)
+
+          if (currentPost?.body) {
+            const embedding = await generateEmbedding(currentPost.body)
+            if (embedding) {
+              await db
+                .update(posts)
+                .set({ embedding })
+                .where(eq(posts.id, postId))
+            }
+          }
+        } catch (embeddingErr) {
+          console.error(`Error generating embedding for published post ${postId}:`, embeddingErr)
+        }
+      }
     }
   })
 }

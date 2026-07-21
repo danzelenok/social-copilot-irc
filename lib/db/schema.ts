@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, boolean, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, boolean, pgEnum, vector } from 'drizzle-orm/pg-core';
 
 // Enums
 export const platformTypeEnum = pgEnum('platform_type', ['telegram', 'instagram', 'framer', 'subsplash']);
@@ -47,6 +47,8 @@ export const posts = pgTable('posts', {
   media_url: text('media_url'),
   media_type: mediaTypeEnum('media_type'),
   post_type: postTypeEnum('post_type').default('post').notNull(),
+  embedding: vector('embedding', { dimensions: 1536 }),
+  is_style_example: boolean('is_style_example').default(false).notNull(),
   created_at: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -89,8 +91,10 @@ export const aiStyleSettings = pgTable('ai_style_settings', {
   organization_id: uuid('organization_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' }),
-  style_prompt: text('style_prompt'),
-  created_at: timestamp('created_at').defaultNow().notNull(),
+  style_examples_enabled: boolean('style_examples_enabled').default(true).notNull(),
+  use_instagram_history_for_style: boolean('use_instagram_history_for_style').default(false).notNull(),
+  custom_prompt: text('custom_prompt'),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export type Organization = typeof organizations.$inferSelect;

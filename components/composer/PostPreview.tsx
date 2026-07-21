@@ -57,7 +57,7 @@ export default function PostPreview({
 
       <CardContent className="p-5">
         {postType === "story" ? (
-          <div className="rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden shadow-xl max-w-sm mx-auto min-h-[460px] flex flex-col justify-between relative text-white">
+          <div className="rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden shadow-xl max-w-sm w-full mx-auto aspect-[9/16] flex flex-col justify-between relative text-white">
             {/* Story Top Bar */}
             <div className="p-3 bg-gradient-to-b from-black/80 to-transparent z-10 space-y-2">
               {/* Progress bar line */}

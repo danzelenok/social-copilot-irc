@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import OpenAI from "openai"
+import { db } from "@/lib/db"
+import { aiStyleSettings } from "@/lib/db/schema"
+import { getCurrentOrganization } from "@/lib/auth/org"
+import { findSimilarPosts } from "@/lib/ai/styleExamples"
+import { eq } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 
@@ -15,6 +20,7 @@ export async function POST(req: NextRequest) {
     // 2. Parse request payload
     const body = await req.json()
     const { description, platform } = body
+    const branchIds: string[] = Array.isArray(body.branchIds) ? body.branchIds : []
 
     if (!description || typeof description !== "string" || !description.trim()) {
       return NextResponse.json(
@@ -30,12 +36,28 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 3. Check for OpenAI key (Support simulation mode for offline dev)
+    // 3. Fetch Organization & AI Style Settings
+    const org = await getCurrentOrganization()
+    let settings = null
+    if (org) {
+      const [fetchedSettings] = await db
+        .select()
+        .from(aiStyleSettings)
+        .where(eq(aiStyleSettings.organization_id, org.id))
+        .limit(1)
+      settings = fetchedSettings || null
+    }
+
+    // 4. RAG: Search for similar post examples if style examples enabled
+    const examples = (org && settings?.style_examples_enabled !== false)
+      ? await findSimilarPosts(description, org.id, branchIds)
+      : []
+
+    // 5. Check for OpenAI key (Support simulation mode for offline dev)
     const apiKey = process.env.OPENAI_API_KEY
     const isMock = !apiKey || apiKey.startsWith("mock_") || apiKey.trim() === ""
 
     if (isMock) {
-      // Simulation mode
       await new Promise((resolve) => setTimeout(resolve, 800)) // Short delay
 
       const isRussian = /[а-яА-Я]/.test(description)
@@ -62,7 +84,6 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Enforce post body and title length constraints
       const bodyLimit = platform === "telegram" ? 500 : 300
       if (generatedBody.length > bodyLimit) {
         generatedBody = generatedBody.slice(0, bodyLimit - 3) + "..."
@@ -74,25 +95,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ title, body: generatedBody })
     }
 
-    // 4. OpenAI Chat Completions API
-    const openai = new OpenAI({ apiKey })
+    // 6. Assemble Dynamic System Prompt
+    let systemPrompt = `You are a social media assistant for a church community. Generate a post title and body based on the event description.`
 
-    const systemPrompt = `You are a helpful social media assistant for a church.
-Your task is to generate a post title and post body based on the event description provided.
-The content should have a warm, communal, welcoming, and inviting tone suitable for a church community.
-
-Instructions:
+    systemPrompt += `\n\nInstructions:
 1. Generate a "title" (up to 60 characters).
 2. Generate a "body" (post caption).
 3. If platform is "instagram", limit the "body" to 300 characters.
 4. If platform is "telegram", limit the "body" to 500 characters.
 5. If platform is "both", limit the "body" to 300 characters.
 6. Do NOT automatically add hashtags.
-7. Reply in the same language as the user's event description (e.g., Russian if the description is in Russian, English if in English).
-8. Return the response strictly as a JSON object with the keys "title" and "body".`
+7. Reply in the same language as the user's event description.`
+
+    if (examples.length > 0) {
+      systemPrompt += `\n\nHere are examples of how this church writes posts. Match their style, tone, and formatting exactly:\n`
+      examples.forEach((ex, i) => {
+        systemPrompt += `\nExample ${i + 1}:\nTitle: ${ex.title}\nBody: ${ex.body}\n`
+      })
+    }
+
+    if (settings?.custom_prompt) {
+      systemPrompt += `\n\nAdditional instructions from the administrator: ${settings.custom_prompt}`
+    }
+
+    systemPrompt += `\n\nReturn JSON strictly with keys "title" (max 60 chars) and "body".`
 
     const userPrompt = `Platform targets: ${platform}\nEvent description: ${description}`
 
+    const openai = new OpenAI({ apiKey })
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -111,7 +141,6 @@ Instructions:
     let generatedTitle = (parsed.title || "").trim()
     let generatedBody = (parsed.body || "").trim()
 
-    // Safety length checks
     if (generatedTitle.length > 60) {
       generatedTitle = generatedTitle.slice(0, 57) + "..."
     }
