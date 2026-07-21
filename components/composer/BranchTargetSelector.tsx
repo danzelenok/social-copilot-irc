@@ -14,6 +14,7 @@ interface BranchTargetSelectorProps {
   selectedTargets: Record<string, string[]>
   onChange: (selectedTargets: Record<string, string[]>) => void
   disabled?: boolean
+  allowedPlatform?: "instagram" | "telegram" | null
 }
 
 export default function BranchTargetSelector({
@@ -21,11 +22,16 @@ export default function BranchTargetSelector({
   selectedTargets,
   onChange,
   disabled = false,
+  allowedPlatform = null,
 }: BranchTargetSelectorProps) {
-  // Extract all active accounts across all branches
+  // Extract all active accounts across all branches (matching allowedPlatform filter if provided)
   const allActiveAccounts = useMemo(() => {
-    return branches.flatMap((b) => (b.accounts || []).filter((a) => a.is_active))
-  }, [branches])
+    return branches.flatMap((b) =>
+      (b.accounts || []).filter(
+        (a) => a.is_active && (!allowedPlatform || a.platform_type === allowedPlatform)
+      )
+    )
+  }, [branches, allowedPlatform])
 
   const totalActiveCount = allActiveAccounts.length
 
@@ -152,7 +158,9 @@ export default function BranchTargetSelector({
         {/* Branch Cards Stack */}
         <div className="space-y-2.5">
           {branches.map((branch) => {
-            const activeAccounts = (branch.accounts || []).filter((a) => a.is_active)
+            const activeAccounts = (branch.accounts || []).filter(
+              (a) => a.is_active && (!allowedPlatform || a.platform_type === allowedPlatform)
+            )
             const hasActiveAccounts = activeAccounts.length > 0
             if (!hasActiveAccounts) return null
 

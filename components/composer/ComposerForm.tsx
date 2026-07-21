@@ -35,6 +35,7 @@ interface ComposerFormProps {
     body: string
     media_url: string | null
     media_type: "photo" | "video" | null
+    post_type?: "post" | "story" | null
   }
   initialTargets?: {
     account_id: string
@@ -51,6 +52,9 @@ export default function ComposerForm({
 }: ComposerFormProps) {
   const router = useRouter()
   // Form Fields State
+  const [postType, setPostType] = useState<"post" | "story">(
+    (initialPost?.post_type as "post" | "story") || "post"
+  )
   const [title, setTitle] = useState(initialPost?.title || "")
   const [body, setBody] = useState(initialPost?.body || "")
 
@@ -197,7 +201,7 @@ export default function ComposerForm({
       toast.error("Please enter an Event Title.")
       return
     }
-    if (!body.trim()) {
+    if (postType !== "story" && !body.trim()) {
       toast.error("Please enter the Post Body.")
       return
     }
@@ -223,6 +227,7 @@ export default function ComposerForm({
           body,
           mediaUrl,
           mediaType,
+          postType,
           targets,
         })
 
@@ -241,6 +246,7 @@ export default function ComposerForm({
           targets,
           mediaUrl,
           mediaType,
+          postType,
         })
 
         if (!draftResult.success || !draftResult.post) {
@@ -297,6 +303,7 @@ export default function ComposerForm({
           body,
           mediaUrl,
           mediaType,
+          postType,
           targets,
         })
       } else {
@@ -306,6 +313,7 @@ export default function ComposerForm({
           body,
           mediaUrl,
           mediaType,
+          postType,
           targets,
         })
       }
@@ -332,6 +340,7 @@ export default function ComposerForm({
 
   // Full reset (e.g. after successful publish/schedule)
   const handleFullReset = () => {
+    setPostType("post")
     setTitle("")
     setBody("")
     setSelectedTargets({})
@@ -348,17 +357,66 @@ export default function ComposerForm({
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       {/* Form Area: 7 Columns */}
       <div className="lg:col-span-7 space-y-6 bg-card/40 border border-border/80 p-6 rounded-xl shadow-xs">
-        <div className="flex items-center gap-2 mb-2 pb-4 border-b border-border/60">
-          <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-            <PenSquare className="h-5 w-5" />
+        <div className="flex items-center justify-between gap-2 mb-2 pb-4 border-b border-border/60">
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <PenSquare className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-lg text-foreground tracking-tight">
+                {initialPost ? "Edit Campaign" : "Create Campaign"}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {initialPost ? "Modify details and rescheduling rules." : "Configure details, schedules, and targets for your campaign."}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-semibold text-lg text-foreground tracking-tight">
-              {initialPost ? "Edit Campaign" : "Create Post Campaign"}
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {initialPost ? "Modify details and rescheduling rules." : "Configure details, schedules, and targets for your post."}
-            </p>
+
+          {/* Post / Story Mode Switcher */}
+          <div className="flex items-center p-1 bg-muted/60 rounded-lg border border-border/40 shrink-0">
+            <button
+              type="button"
+              disabled={isFormDisabled}
+              onClick={() => setPostType("post")}
+              className={cn(
+                "px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer select-none",
+                postType === "post"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Post
+            </button>
+            <button
+              type="button"
+              disabled={isFormDisabled}
+              onClick={() => {
+                setPostType("story")
+                // When switching to story mode, strip any Telegram targets
+                setSelectedTargets((prev) => {
+                  const updated: Record<string, string[]> = {}
+                  branches.forEach((b) => {
+                    const currentSelected = prev[b.id] || []
+                    const instagramAccounts = (b.accounts || [])
+                      .filter((a) => a.is_active && a.platform_type === "instagram")
+                      .map((a) => a.id)
+                    const filtered = currentSelected.filter((id) => instagramAccounts.includes(id))
+                    if (filtered.length > 0) {
+                      updated[b.id] = filtered
+                    }
+                  })
+                  return updated
+                })
+              }}
+              className={cn(
+                "px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer select-none",
+                postType === "story"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Story
+            </button>
           </div>
         </div>
 
@@ -389,30 +447,39 @@ export default function ComposerForm({
             />
           </div>
 
-          {/* Body Text */}
-          <div className="space-y-1.5">
-            <label htmlFor="body" className="text-xs font-semibold text-foreground uppercase tracking-wider">
-              Body Text
-            </label>
-            <Textarea
-              id="body"
-              placeholder="Write the message caption or content for the branches..."
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              disabled={isFormDisabled}
-              className="bg-background/50 min-h-32 text-sm leading-relaxed"
-              required
-            />
-          </div>
+          {/* Body Text — Hidden in Story mode */}
+          {postType !== "story" && (
+            <div className="space-y-1.5">
+              <label htmlFor="body" className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                Body Text
+              </label>
+              <Textarea
+                id="body"
+                placeholder="Write the message caption or content for the branches..."
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                disabled={isFormDisabled}
+                className="bg-background/50 min-h-32 text-sm leading-relaxed"
+                required
+              />
+            </div>
+          )}
 
           {/* Media Upload Zone */}
-          <MediaUploadField
-            mediaUrl={mediaUrl}
-            onChangeMediaUrl={setMediaUrl}
-            mediaType={mediaType}
-            onChangeMediaType={setMediaType}
-            disabled={isFormDisabled}
-          />
+          <div className="space-y-1">
+            <MediaUploadField
+              mediaUrl={mediaUrl}
+              onChangeMediaUrl={setMediaUrl}
+              mediaType={mediaType}
+              onChangeMediaType={setMediaType}
+              disabled={isFormDisabled}
+            />
+            {postType === "story" && (
+              <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-1.5 pt-1">
+                <span className="text-pink-500 font-bold">✨</span> Stories support images (1080×1920) and videos up to 60 seconds
+              </p>
+            )}
+          </div>
 
           {/* Target branches (multi-select collapsible cards) */}
           <div className="pt-2 border-t border-border/40">
@@ -421,6 +488,7 @@ export default function ComposerForm({
               selectedTargets={selectedTargets}
               onChange={setSelectedTargets}
               disabled={isFormDisabled}
+              allowedPlatform={postType === "story" ? "instagram" : null}
             />
           </div>
 
@@ -593,6 +661,7 @@ export default function ComposerForm({
           eventAt={previewEventAt}
           mediaUrl={mediaUrl}
           mediaType={mediaType}
+          postType={postType}
         />
       </div>
     </div>

@@ -5,6 +5,7 @@ export const platformTypeEnum = pgEnum('platform_type', ['telegram', 'instagram'
 export const postStatusEnum = pgEnum('post_status', ['draft', 'publishing', 'published', 'failed', 'scheduled', 'cancelled']);
 export const postTargetStatusEnum = pgEnum('post_target_status', ['pending', 'processing', 'published', 'failed', 'scheduled', 'cancelled']);
 export const mediaTypeEnum = pgEnum('media_type', ['photo', 'video']);
+export const postTypeEnum = pgEnum('post_type', ['post', 'story']);
 
 // Organizations Table
 export const organizations = pgTable('organizations', {
@@ -45,6 +46,7 @@ export const posts = pgTable('posts', {
   status: postStatusEnum('status').default('draft').notNull(),
   media_url: text('media_url'),
   media_type: mediaTypeEnum('media_type'),
+  post_type: postTypeEnum('post_type').default('post').notNull(),
   created_at: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -64,6 +66,9 @@ export const postTargets = pgTable('post_targets', {
   published_at: timestamp('published_at'),
   event_at: timestamp('event_at'),
   schedule_id: uuid('schedule_id'),
+  platform_message_id: text('platform_message_id'),
+  hidden_from_calendar: boolean('hidden_from_calendar').default(false).notNull(),
+  hidden_at: timestamp('hidden_at'),
 });
 
 // Branch Addresses Table

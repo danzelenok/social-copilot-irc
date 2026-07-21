@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm"
 import { getPostTargetsWithDetails } from "@/lib/actions/posts"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { AutoRefresh } from "@/components/shared/AutoRefresh"
-import { CancelTargetButton } from "@/components/composer/TargetActions"
+import { TargetActionCell } from "@/components/composer/TargetActions"
 import {
   Card,
   CardContent,
@@ -239,11 +239,7 @@ export default async function PostStatusPage({ params }: PageProps) {
                             </div>
                           </TableCell>
                           <TableCell className="text-right py-3.5">
-                            {target.status === "scheduled" ? (
-                              <CancelTargetButton targetId={target.id} />
-                            ) : (
-                              <span className="text-xs text-muted-foreground select-none">—</span>
-                            )}
+                            <TargetActionCell target={target} post={post} />
                           </TableCell>
                           <TableCell className="text-right text-xs text-muted-foreground pr-4 py-3.5">
                             {target.status === "published" && target.published_at

@@ -1,4 +1,3 @@
-import React from "react"
 import { OrganizationProfile } from "@clerk/nextjs"
 import { PageHeader } from "@/components/shared/PageHeader"
 
@@ -11,7 +10,16 @@ export default function TeamSettingsPage() {
         <OrganizationProfile
           appearance={{
             variables: {
-              colorPrimary: "#c4f030",
+              // Use the darker accent (--ring / --accent) rather than the raw
+              // --primary lime, which is too light for readable text/links.
+              colorPrimary: "#8dc400",
+              colorPrimaryForeground: "#18180e",
+              colorBackground: "#ffffff",
+              colorForeground: "#18180e",
+              colorMutedForeground: "#8a8a78",
+              colorInput: "#ffffff",
+              colorInputForeground: "#18180e",
+              borderRadius: "0.625rem",
             },
           }}
         />

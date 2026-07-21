@@ -25,12 +25,16 @@ export async function publishTelegram(
     botToken === "123456:ABC-DEF" ||
     !/^\d+:[A-Za-z0-9_-]+$/.test(botToken)
 
+  let platformMessageId: string | null = null
+
   if (isMock) {
     console.log(`[Telegram Mock Publish] Chat: ${channelId}, Caption: ${caption}, Asset: ${assetUrl}`)
     // Wait slightly to simulate API latency
     await new Promise((resolve) => setTimeout(resolve, 500))
+    platformMessageId = `mock_msg_${Date.now()}`
   } else {
     const bot = new Bot(botToken)
+    let message
     if (assetUrl) {
       // If asset URL is relative (e.g. from local uploads fallback), resolve it to absolute URL
       const resolvedAssetUrl = assetUrl.startsWith("/") 
@@ -38,13 +42,17 @@ export async function publishTelegram(
         : assetUrl
 
       if (mediaType === "video") {
-        await bot.api.sendVideo(channelId, resolvedAssetUrl, { caption })
+        message = await bot.api.sendVideo(channelId, resolvedAssetUrl, { caption })
       } else {
         // Default to photo if mediaType is photo or anything else when media exists
-        await bot.api.sendPhoto(channelId, resolvedAssetUrl, { caption })
+        message = await bot.api.sendPhoto(channelId, resolvedAssetUrl, { caption })
       }
     } else {
-      await bot.api.sendMessage(channelId, caption)
+      message = await bot.api.sendMessage(channelId, caption)
+    }
+
+    if (message && message.message_id !== undefined) {
+      platformMessageId = String(message.message_id)
     }
   }
 
@@ -54,6 +62,7 @@ export async function publishTelegram(
     .set({
       status: "published",
       published_at: new Date(),
+      platform_message_id: platformMessageId,
     })
     .where(eq(postTargets.id, targetId))
 }

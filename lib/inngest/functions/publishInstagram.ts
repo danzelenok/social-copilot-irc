@@ -5,7 +5,7 @@ import { format } from "date-fns"
 
 export async function publishInstagram(
   targetId: string,
-  post: { title: string; body: string; event_at: Date | string | null },
+  post: { title: string; body: string; event_at: Date | string | null; media_type?: string | null },
   credentials: { oauthToken?: string; accessToken?: string; instagramUserId?: string; userId?: string },
   assetUrl: string | null,
   mediaType: string | null
@@ -17,16 +17,22 @@ export async function publishInstagram(
     throw new Error("Instagram configuration requires accessToken/oauthToken and userId/instagramUserId.")
   }
 
+  const isMock =
+    accessToken.startsWith("mock_") ||
+    userId.startsWith("mock_") ||
+    accessToken === "123456"
+
   // Format caption
   const eventDate = post.event_at ? new Date(post.event_at) : null
   const formattedDate = eventDate ? format(eventDate, "EEE, MMM d, yyyy 'at' h:mm a") : ""
   const caption = `${post.title}\n\n${post.body}${formattedDate ? `\n\nEvent: ${formattedDate}` : ""}`
 
-  const isMock = accessToken.startsWith("mock_")
+  let platformMessageId: string | null = null
 
   if (isMock) {
     console.log(`[Instagram Mock Publish] User: ${userId}, Media: ${mediaType}, Asset: ${assetUrl}, Caption: ${caption}`)
     await new Promise((resolve) => setTimeout(resolve, 500))
+    platformMessageId = `mock_ig_${Date.now()}`
   } else {
     if (!assetUrl) {
       throw new Error("Instagram requires media")
@@ -38,21 +44,30 @@ export async function publishInstagram(
       : assetUrl
 
     // Step 1: Create media container
-    // https://graph.instagram.com/v18.0/{userId}/media
+    // https://graph.instagram.com/v21.0/{userId}/media
     const containerParams: Record<string, string> = {
-      caption,
       access_token: accessToken,
     }
 
     if (mediaType === "video") {
+      containerParams.caption = caption
       containerParams.media_type = "REELS"
       containerParams.video_url = resolvedAssetUrl
+    } else if (mediaType === "story") {
+      containerParams.media_type = "STORIES"
+      if (post.media_type === "video") {
+        containerParams.video_url = resolvedAssetUrl
+      } else {
+        containerParams.image_url = resolvedAssetUrl
+      }
+      // NO caption field — Stories do not support captions
     } else {
+      containerParams.caption = caption
       containerParams.media_type = "IMAGE"
       containerParams.image_url = resolvedAssetUrl
     }
 
-    const createRes = await fetch(`https://graph.instagram.com/v18.0/${userId}/media`, {
+    const createRes = await fetch(`https://graph.instagram.com/v21.0/${userId}/media`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -80,7 +95,7 @@ export async function publishInstagram(
       }
 
       const pollRes = await fetch(
-        `https://graph.instagram.com/v18.0/${containerId}?fields=status_code&access_token=${accessToken}`
+        `https://graph.instagram.com/v21.0/${containerId}?fields=status_code&access_token=${accessToken}`
       )
 
       if (!pollRes.ok) {
@@ -111,7 +126,7 @@ export async function publishInstagram(
 
     // Step 3: Publish container
     // POST /{userId}/media_publish
-    const publishRes = await fetch(`https://graph.instagram.com/v18.0/${userId}/media_publish`, {
+    const publishRes = await fetch(`https://graph.instagram.com/v21.0/${userId}/media_publish`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -131,6 +146,11 @@ export async function publishInstagram(
       const errMsg = parsedErr?.error?.message || errText
       throw new Error(`Failed to publish Instagram media container: ${errMsg}`)
     }
+
+    const publishData = await publishRes.json()
+    if (publishData && publishData.id) {
+      platformMessageId = String(publishData.id)
+    }
   }
 
   // Update target on success
@@ -139,6 +159,7 @@ export async function publishInstagram(
     .set({
       status: "published",
       published_at: new Date(),
+      platform_message_id: platformMessageId,
     })
     .where(eq(postTargets.id, targetId))
 }

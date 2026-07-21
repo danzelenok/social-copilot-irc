@@ -92,9 +92,10 @@ export default function BranchListClient({ initialBranches }: BranchListClientPr
         title="Branches"
         action={
           <Button
+            variant="outline"
             size="sm"
             onClick={() => setIsCreateOpen(true)}
-            className="cursor-pointer gap-1.5 shadow-xs"
+            className="cursor-pointer gap-1.5 text-xs font-semibold text-foreground border-[1.5px] border-ring bg-transparent hover:bg-ring/10 shrink-0"
           >
             <Plus className="h-4 w-4" /> Add Branch
           </Button>
@@ -109,9 +110,10 @@ export default function BranchListClient({ initialBranches }: BranchListClientPr
           description="Create a branch to start configuring platform accounts and templates."
           action={
             <Button
+              variant="outline"
               size="sm"
               onClick={() => setIsCreateOpen(true)}
-              className="cursor-pointer gap-1.5"
+              className="cursor-pointer gap-1.5 text-xs font-semibold text-foreground border-[1.5px] border-ring bg-transparent hover:bg-ring/10 shrink-0"
             >
               <Plus className="h-4 w-4" /> Create First Branch
             </Button>

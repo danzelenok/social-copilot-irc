@@ -6,6 +6,9 @@ import { inngest } from "@/lib/inngest/client"
 import { revalidatePath } from "next/cache"
 import { eq, and, inArray } from "drizzle-orm"
 import { decryptAndGetHandle } from "@/lib/utils/accounts"
+import { decrypt } from "@/lib/utils/encryption"
+import { Bot } from "grammy"
+import { format } from "date-fns"
 import fs from "fs"
 import path from "path"
 import { imagekit } from "@/lib/imagekit"
@@ -56,17 +59,18 @@ async function validateAccountsBelongToOrg(accountIds: string[]) {
  */
 export async function createDraftPost(data: {
   title: string
-  body: string
+  body?: string
   targets: { accountId: string; address?: string | null; eventAt?: Date | null }[]
   mediaUrl?: string | null
   mediaType?: "photo" | "video" | null
+  postType?: "post" | "story"
 }) {
-  const { title, body, targets, mediaUrl, mediaType } = data
+  const { title, body = "", targets, mediaUrl, mediaType, postType = "post" } = data
 
   if (!title || title.trim() === "") {
     return { success: false, error: "Event Title is required." }
   }
-  if (!body || body.trim() === "") {
+  if (postType !== "story" && (!body || body.trim() === "")) {
     return { success: false, error: "Body text is required." }
   }
   if (!targets || targets.length === 0) {
@@ -86,6 +90,7 @@ export async function createDraftPost(data: {
         status: "draft",
         media_url: mediaUrl || null,
         media_type: mediaType || null,
+        post_type: postType,
       })
       .returning()
 
@@ -138,6 +143,9 @@ export async function getPostTargetsWithDetails(postId: string) {
         published_at: postTargets.published_at,
         event_at: postTargets.event_at,
         schedule_id: postTargets.schedule_id,
+        platform_message_id: postTargets.platform_message_id,
+        hidden_from_calendar: postTargets.hidden_from_calendar,
+        hidden_at: postTargets.hidden_at,
         account: {
           id: accounts.id,
           platform_type: accounts.platform_type,
@@ -168,6 +176,9 @@ export async function getPostTargetsWithDetails(postId: string) {
         published_at: t.published_at,
         event_at: t.event_at,
         schedule_id: t.schedule_id,
+        platform_message_id: t.platform_message_id,
+        hidden_from_calendar: t.hidden_from_calendar,
+        hidden_at: t.hidden_at,
         account: {
           id: t.account.id,
           platform_type: t.account.platform_type as "telegram" | "instagram" | "framer" | "subsplash",
@@ -233,9 +244,10 @@ export async function approveAndPublish(postId: string) {
  */
 export async function createAndSchedulePost(data: {
   title: string
-  body: string
+  body?: string
   mediaUrl?: string | null
   mediaType?: "photo" | "video" | null
+  postType?: "post" | "story"
   targets: {
     accountId: string
     address?: string | null
@@ -245,12 +257,12 @@ export async function createAndSchedulePost(data: {
     branchName: string
   }[]
 }) {
-  const { title, body, mediaUrl, mediaType, targets } = data
+  const { title, body = "", mediaUrl, mediaType, postType = "post", targets } = data
 
   if (!title || title.trim() === "") {
     return { success: false, error: "Event Title is required." }
   }
-  if (!body || body.trim() === "") {
+  if (postType !== "story" && (!body || body.trim() === "")) {
     return { success: false, error: "Body text is required." }
   }
   if (!targets || targets.length === 0) {
@@ -298,6 +310,7 @@ export async function createAndSchedulePost(data: {
         status: "scheduled",
         media_url: mediaUrl || null,
         media_type: mediaType || null,
+        post_type: postType,
       })
       .returning()
 
@@ -434,9 +447,10 @@ export async function updateAndReschedulePost(
   postId: string,
   data: {
     title: string
-    body: string
+    body?: string
     mediaUrl?: string | null
     mediaType?: "photo" | "video" | null
+    postType?: "post" | "story"
     targets: {
       accountId: string
       address?: string | null
@@ -447,12 +461,12 @@ export async function updateAndReschedulePost(
     }[]
   }
 ) {
-  const { title, body, mediaUrl, mediaType, targets } = data
+  const { title, body = "", mediaUrl, mediaType, postType = "post", targets } = data
 
   if (!title || title.trim() === "") {
     return { success: false, error: "Event Title is required." }
   }
-  if (!body || body.trim() === "") {
+  if (postType !== "story" && (!body || body.trim() === "")) {
     return { success: false, error: "Body text is required." }
   }
   if (!targets || targets.length === 0) {
@@ -517,6 +531,7 @@ export async function updateAndReschedulePost(
         status: "scheduled",
         media_url: mediaUrl || null,
         media_type: mediaType || null,
+        post_type: postType,
       })
       .where(eq(posts.id, postId))
 
@@ -569,18 +584,19 @@ export async function updateAndPublishPost(
   postId: string,
   data: {
     title: string
-    body: string
+    body?: string
     mediaUrl?: string | null
     mediaType?: "photo" | "video" | null
+    postType?: "post" | "story"
     targets: { accountId: string; address?: string | null }[]
   }
 ) {
-  const { title, body, mediaUrl, mediaType, targets } = data
+  const { title, body = "", mediaUrl, mediaType, postType = "post", targets } = data
 
   if (!title || title.trim() === "") {
     return { success: false, error: "Event Title is required." }
   }
-  if (!body || body.trim() === "") {
+  if (postType !== "story" && (!body || body.trim() === "")) {
     return { success: false, error: "Body text is required." }
   }
   if (!targets || targets.length === 0) {
@@ -622,6 +638,7 @@ export async function updateAndPublishPost(
         status: "publishing",
         media_url: mediaUrl || null,
         media_type: mediaType || null,
+        post_type: postType,
       })
       .where(eq(posts.id, postId))
 
@@ -694,7 +711,11 @@ export async function getScheduledTargetsAction(branchId: string | null) {
       .innerJoin(branches, eq(accounts.branch_id, branches.id))
       .orderBy(postTargets.event_at)
 
-    const baseQuery = and(eq(postTargets.status, "scheduled"), eq(branches.organization_id, org.id))
+    const baseQuery = and(
+      eq(postTargets.status, "scheduled"),
+      eq(branches.organization_id, org.id),
+      eq(postTargets.hidden_from_calendar, false)
+    )
     const results = branchId 
       ? await query.where(and(baseQuery, eq(branches.id, branchId))) 
       : await query.where(baseQuery)
@@ -816,6 +837,181 @@ export async function uploadMedia(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Internal server error during upload.",
+    }
+  }
+}
+
+/**
+ * Edits an already published Telegram post in channel using GrammY API.
+ */
+export async function editTelegramPost(
+  postTargetId: string,
+  data: { title: string; body: string; mediaUrl?: string | null }
+) {
+  try {
+    const org = await requireCurrentOrganization()
+
+    // 1. Fetch target with post & account details
+    const [target] = await db
+      .select({
+        id: postTargets.id,
+        post_id: postTargets.post_id,
+        account_id: postTargets.account_id,
+        status: postTargets.status,
+        platform_message_id: postTargets.platform_message_id,
+        event_at: postTargets.event_at,
+        asset_url: postTargets.asset_url,
+        post: {
+          id: posts.id,
+          title: posts.title,
+          body: posts.body,
+          media_url: posts.media_url,
+          media_type: posts.media_type,
+        },
+        account: {
+          id: accounts.id,
+          platform_type: accounts.platform_type,
+          credentials_json: accounts.credentials_json,
+        },
+      })
+      .from(postTargets)
+      .innerJoin(posts, eq(postTargets.post_id, posts.id))
+      .innerJoin(accounts, eq(postTargets.account_id, accounts.id))
+      .innerJoin(branches, eq(accounts.branch_id, branches.id))
+      .where(and(eq(postTargets.id, postTargetId), eq(branches.organization_id, org.id)))
+      .limit(1)
+
+    if (!target) {
+      return { success: false, error: "Target post not found or access denied." }
+    }
+
+    if (target.account.platform_type !== "telegram") {
+      return { success: false, error: "Edit post action is only supported for Telegram targets." }
+    }
+
+    if (!target.platform_message_id) {
+      return { success: false, error: "Platform message ID missing. Cannot edit Telegram post." }
+    }
+
+    // 2. Decrypt credentials
+    const decryptedCredsStr = decrypt(target.account.credentials_json)
+    const creds = JSON.parse(decryptedCredsStr) as { botToken?: string; channelId?: string }
+
+    if (!creds.botToken || !creds.channelId) {
+      return { success: false, error: "Invalid Telegram bot credentials." }
+    }
+
+    const { botToken, channelId } = creds
+
+    // 3. Format caption/text
+    const eventDate = target.event_at ? new Date(target.event_at) : null
+    const formattedDate = eventDate ? format(eventDate, "EEE, MMM d, yyyy 'at' h:mm a") : ""
+    const caption = `${data.title.trim()}\n\n${data.body.trim()}${formattedDate ? `\n\nEvent: ${formattedDate}` : ""}`
+
+    const isMock =
+      botToken.startsWith("mock_") ||
+      botToken === "123456:ABC-DEF" ||
+      !/^\d+:[A-Za-z0-9_-]+$/.test(botToken)
+
+    if (isMock) {
+      console.log(
+        `[Telegram Mock Edit] Target: ${postTargetId}, MessageID: ${target.platform_message_id}, Caption: ${caption}`
+      )
+    } else {
+      const bot = new Bot(botToken)
+      const msgId = Number(target.platform_message_id)
+      const activeMediaUrl = data.mediaUrl !== undefined ? data.mediaUrl : (target.asset_url || target.post.media_url)
+
+      if (data.mediaUrl) {
+        const resolvedUrl = data.mediaUrl.startsWith("/")
+          ? `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${data.mediaUrl}`
+          : data.mediaUrl
+
+        await bot.api.editMessageMedia(channelId, msgId, {
+          type: target.post.media_type === "video" ? "video" : "photo",
+          media: resolvedUrl,
+          caption,
+        })
+      } else if (activeMediaUrl) {
+        await bot.api.editMessageCaption(channelId, msgId, { caption })
+      } else {
+        await bot.api.editMessageText(channelId, msgId, caption)
+      }
+    }
+
+    // 4. Update DB
+    await db
+      .update(posts)
+      .set({
+        title: data.title.trim(),
+        body: data.body.trim(),
+        ...(data.mediaUrl !== undefined ? { media_url: data.mediaUrl } : {}),
+      })
+      .where(eq(posts.id, target.post_id))
+
+    if (data.mediaUrl !== undefined) {
+      await db
+        .update(postTargets)
+        .set({ asset_url: data.mediaUrl })
+        .where(eq(postTargets.id, postTargetId))
+    }
+
+    revalidatePath("/composer")
+    revalidatePath("/dashboard")
+    revalidatePath(`/composer/${target.post_id}`)
+    revalidatePath("/")
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to edit Telegram post:", error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to edit Telegram post.",
+    }
+  }
+}
+
+/**
+ * Hides an Instagram post target from calendar view locally in DB.
+ */
+export async function hideFromCalendar(postTargetId: string) {
+  try {
+    const org = await requireCurrentOrganization()
+
+    const [target] = await db
+      .select({
+        id: postTargets.id,
+        post_id: postTargets.post_id,
+      })
+      .from(postTargets)
+      .innerJoin(accounts, eq(postTargets.account_id, accounts.id))
+      .innerJoin(branches, eq(accounts.branch_id, branches.id))
+      .where(and(eq(postTargets.id, postTargetId), eq(branches.organization_id, org.id)))
+      .limit(1)
+
+    if (!target) {
+      return { success: false, error: "Target post not found or access denied." }
+    }
+
+    await db
+      .update(postTargets)
+      .set({
+        hidden_from_calendar: true,
+        hidden_at: new Date(),
+      })
+      .where(eq(postTargets.id, postTargetId))
+
+    revalidatePath("/composer")
+    revalidatePath("/dashboard")
+    revalidatePath(`/composer/${target.post_id}`)
+    revalidatePath("/")
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to hide post target from calendar:", error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to hide post target from calendar.",
     }
   }
 }

@@ -22,6 +22,7 @@ interface PostPreviewProps {
   eventAt: Date | null
   mediaUrl?: string | null
   mediaType?: string | null
+  postType?: "post" | "story"
 }
 
 export default function PostPreview({
@@ -30,6 +31,7 @@ export default function PostPreview({
   eventAt,
   mediaUrl,
   mediaType,
+  postType = "post",
 }: PostPreviewProps) {
   const formattedEventDate = eventAt
     ? format(eventAt, "EEE, MMM d, yyyy 'at' h:mm a")
@@ -44,17 +46,82 @@ export default function PostPreview({
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             <CardTitle className="text-sm font-semibold text-foreground">
-              Live Preview
+              {postType === "story" ? "Instagram Story Preview" : "Live Preview"}
             </CardTitle>
           </div>
           <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-            Reactive derived render
+            {postType === "story" ? "Stories (9:16)" : "Reactive derived render"}
           </span>
         </div>
       </CardHeader>
 
       <CardContent className="p-5">
-        <Tabs defaultValue="telegram" className="w-full">
+        {postType === "story" ? (
+          <div className="rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden shadow-xl max-w-sm mx-auto min-h-[460px] flex flex-col justify-between relative text-white">
+            {/* Story Top Bar */}
+            <div className="p-3 bg-gradient-to-b from-black/80 to-transparent z-10 space-y-2">
+              {/* Progress bar line */}
+              <div className="w-full h-0.5 bg-white/30 rounded-full overflow-hidden">
+                <div className="h-full w-full bg-white rounded-full" />
+              </div>
+
+              {/* User info */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-yellow-500 via-red-500 to-purple-600 p-[1.5px]">
+                    <div className="h-full w-full rounded-full bg-pink-500 flex items-center justify-center text-white text-[9px] font-bold">
+                      SC
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold drop-shadow-xs">social_copilot</span>
+                  <span className="text-[10px] text-white/70">Just now</span>
+                </div>
+                <MoreHorizontal className="h-4 w-4 text-white/80" />
+              </div>
+            </div>
+
+            {/* Story Media Center */}
+            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+              {mediaUrl ? (
+                mediaType === "video" ? (
+                  <video src={mediaUrl} controls className="w-full h-full object-cover" />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mediaUrl}
+                    alt="Instagram story preview"
+                    className="w-full h-full object-cover"
+                  />
+                )
+              ) : (
+                <div className="flex flex-col items-center justify-center text-zinc-500 p-6 text-center">
+                  <ImageIcon className="h-12 w-12 mb-2 opacity-50" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Story Media Placeholder</span>
+                  <span className="text-[10px] text-zinc-400 mt-1">
+                    Upload an image (1080×1920) or video (up to 60s)
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Optional Title Overlay */}
+            {title && (
+              <div className="z-10 px-4 py-2 my-auto self-center bg-black/40 backdrop-blur-md rounded-xl border border-white/10 text-center max-w-[85%] shadow-lg">
+                <p className="text-xs font-bold text-white tracking-tight">{title}</p>
+              </div>
+            )}
+
+            {/* Story Bottom Reply Mock */}
+            <div className="p-3 bg-gradient-to-t from-black/80 to-transparent z-10 flex items-center gap-3">
+              <div className="flex-1 h-9 rounded-full border border-white/30 bg-black/20 px-4 flex items-center text-xs text-white/60">
+                Send message...
+              </div>
+              <Heart className="h-6 w-6 text-white/90 shrink-0" />
+              <Send className="h-5 w-5 text-white/90 shrink-0 -rotate-45" />
+            </div>
+          </div>
+        ) : (
+          <Tabs defaultValue="telegram" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/80 p-0.5 rounded-lg">
             <TabsTrigger value="telegram" className="flex items-center gap-1.5 cursor-pointer py-1.5 text-xs font-semibold">
               <Send className="h-3.5 w-3.5 text-sky-500 fill-sky-500/10" />
@@ -259,6 +326,7 @@ export default function PostPreview({
             </div>
           </TabsContent>
         </Tabs>
+        )}
       </CardContent>
     </Card>
   )

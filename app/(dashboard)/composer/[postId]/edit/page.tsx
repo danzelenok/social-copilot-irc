@@ -62,6 +62,7 @@ export default async function EditCampaignPage({
           body: post.body,
           media_url: post.media_url,
           media_type: post.media_type as any,
+          post_type: post.post_type as any,
         }}
         initialTargets={targets}
       />

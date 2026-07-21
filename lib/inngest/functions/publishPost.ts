@@ -62,6 +62,15 @@ export async function executePublishTarget(targetId: string, step: any) {
     const { target, account, post } = item
     const assetUrl = post.media_url // Copy posts.media_url
 
+    // Stories validation: Telegram does not support Stories
+    if (post.post_type === "story" && account.platform_type === "telegram") {
+      await db
+        .update(postTargets)
+        .set({ status: "failed", error_message: "Stories are not supported on Telegram" })
+        .where(eq(postTargets.id, targetId))
+      return { skipped: true, postId: post.id }
+    }
+
     // Instagram requires media
     if (!assetUrl && account.platform_type === "instagram") {
       await db
@@ -85,6 +94,7 @@ export async function executePublishTarget(targetId: string, step: any) {
         title: post.title,
         body: post.body,
         media_type: post.media_type,
+        post_type: post.post_type,
         event_at: target.event_at, // Use target-specific event_at
       },
       target: {
@@ -111,7 +121,8 @@ export async function executePublishTarget(targetId: string, step: any) {
       if (target.platform_type === "telegram") {
         await publishTelegram(targetId, post, decryptedCreds, target.asset_url, post.media_type)
       } else if (target.platform_type === "instagram") {
-        await publishInstagram(targetId, post, decryptedCreds, target.asset_url, post.media_type)
+        const effectiveMediaType = post.post_type === "story" ? "story" : post.media_type
+        await publishInstagram(targetId, post, decryptedCreds, target.asset_url, effectiveMediaType)
       }
     } catch (error: any) {
       const errorMessage = error?.message || String(error)
